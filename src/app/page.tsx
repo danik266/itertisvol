@@ -77,14 +77,14 @@ export default function HomePage() {
           <div className="max-w-lg">
             <div className="mb-8">
               <div className="flex items-center gap-2">
-                <span className="font-display font-light text-5xl tracking-wide">IT</span>
-                <span className="font-display font-bold text-5xl tracking-wide">ERTIS</span>
-                <Sparkles className="text-yellow-400 fill-yellow-400 drop-shadow-md -mt-3" size={32} />
+                <span className="font-display font-light text-[38px] sm:text-5xl tracking-wide">IT</span>
+                <span className="font-display font-bold text-[38px] sm:text-5xl tracking-wide">ERTIS</span>
+                <Sparkles className="text-yellow-400 fill-yellow-400 drop-shadow-md -mt-2 sm:-mt-3 w-6 h-6 sm:w-8 sm:h-8 shrink-0" />
               </div>
-              <div className="font-display font-extrabold text-4xl tracking-widest pl-[3.5rem] mt-1 shadow-black/10 text-shadow-sm">VOLUNTEER</div>
+              <div className="font-display font-extrabold text-[28px] sm:text-4xl tracking-widest pl-1 sm:pl-[3.5rem] mt-0.5 sm:mt-1 shadow-black/10 text-shadow-sm">VOLUNTEER</div>
             </div>
 
-            <h1 className="text-4xl md:text-[44px] font-extrabold leading-tight mb-8 drop-shadow-md">
+            <h1 className="text-[32px] sm:text-4xl md:text-[44px] font-extrabold leading-tight sm:leading-tight mb-8 drop-shadow-md">
               {t('Технологии, которые', 'Жаңа технологиялар')} <br />
               {t('помогают', 'көмектесетін')} <br />
               {t('менять мир', 'әлемді өзгертуге')}
@@ -111,7 +111,7 @@ export default function HomePage() {
 
       {/* Что такое IT-волонтёр? */}
       <section className="bg-slate-50 py-16 px-4 relative overflow-hidden z-10">
-        <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-12 items-center">
+        <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
           <div>
             <div className="flex items-center gap-3 mb-6">
               <div className="w-10 h-10 bg-[#e0f1f4] rounded-lg flex items-center justify-center text-[#249fa6]">
@@ -160,7 +160,7 @@ export default function HomePage() {
             {t('Что ты можешь делать?', 'Сен не істей аласың?')}
           </h2>
           
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-6">
             {whatYouCanDo.map((item, i) => (
               <div key={i} className="bg-[#f0f6f8] rounded-3xl p-6 flex flex-col items-center text-center shadow-sm hover:shadow-md transition-shadow">
                 <div className="h-24 flex items-center justify-center mb-4">
@@ -185,7 +185,7 @@ export default function HomePage() {
             {t('Направления волонтёрства', 'Волонтерлік бағыттары')}
           </h2>
           
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-6">
             {directions.length > 0 ? (
               directions.slice(0, 5).map((d) => {
                 const style = directionStyles[d.id] || { bg: 'bg-[#ff8a00]', text: 'text-white', btnBg: 'bg-white', btnText: 'text-[#ff8a00]' };
@@ -218,9 +218,9 @@ export default function HomePage() {
           
           <div className="relative">
             {/* The dashed connecting line */}
-            <div className="hidden md:block absolute top-[28px] left-[10%] right-[10%] h-0 border-t-2 border-dashed border-slate-300 z-0" />
+            <div className="hidden lg:block absolute top-[28px] left-[10%] right-[10%] h-0 border-t-2 border-dashed border-slate-300 z-0" />
             
-            <div className="grid grid-cols-1 md:grid-cols-5 gap-8 relative z-10">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8 relative z-10">
               {steps.map((s, i) => (
                 <div key={s.num} className="flex flex-col items-center text-center">
                   <div className={`w-14 h-14 rounded-full flex items-center justify-center text-white font-display font-bold text-xl mb-4 shadow-lg ${i === 0 ? 'bg-[#ff8a00]' : 'bg-[#249fa6]'}`}>
@@ -243,7 +243,7 @@ export default function HomePage() {
             {t('Новости и мероприятия', 'Жаңалықтар мен іс-шаралар')}
           </h2>
           
-          <div className="grid md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {events.length > 0 ? events.map((e) => (
               <div key={e.id} className="bg-white rounded-3xl overflow-hidden shadow-xl shadow-teal-900/10 flex flex-col group hover:-translate-y-1 transition-transform">
                 <div className="h-56 relative overflow-hidden bg-slate-200">
