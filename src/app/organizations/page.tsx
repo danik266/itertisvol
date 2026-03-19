@@ -5,6 +5,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { useData } from '@/lib/DataContext';
 import { Phone, Mail, Instagram, Facebook, Users, Filter, CheckCircle } from 'lucide-react';
 import type { Direction } from '@/data';
+import Link from 'next/link';
 
 interface OrgData {
   id: number;
@@ -15,6 +16,7 @@ interface OrgData {
   city: string;
   phone: string;
   email: string;
+  logo: string;
   social: Record<string, string>;
   volunteers: number;
 }
@@ -100,8 +102,12 @@ export default function OrganizationsPage() {
           return (
             <div key={org.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden card-hover">
               {/* Color header */}
-              <div className="h-16 flex items-center px-5 gap-3" style={{ background: dir?.bg }}>
-                {dir?.image ? (
+              <div className="min-h-[4.5rem] py-2 flex items-center px-5 gap-3" style={{ background: dir?.bg }}>
+                {org.logo ? (
+                  <div className="w-14 h-14 rounded-xl overflow-hidden shrink-0 bg-white shadow-sm p-1 border border-gray-100">
+                    <img src={org.logo} alt={org.name} className="w-full h-full object-contain" />
+                  </div>
+                ) : dir?.image ? (
                   <div className="w-10 h-10 rounded-xl overflow-hidden shrink-0 bg-white shadow-sm">
                     <img src={dir?.image} className="w-full h-full object-cover" />
                   </div>
@@ -176,6 +182,12 @@ export default function OrganizationsPage() {
                       </a>
                     )}
                   </div>
+                
+                <div className="mt-6">
+                  <Link href={`/organizations/${org.id}`} className="block w-full text-center bg-teal-50 text-teal-600 hover:bg-teal-500 hover:text-white font-bold py-3 rounded-xl transition-colors">
+                    {t('Подробнее', 'Толығырақ')}
+                  </Link>
+                </div>
               </div>
             </div>
           );

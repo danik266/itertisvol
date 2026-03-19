@@ -72,7 +72,7 @@ export default function AssistantWidget() {
         body: JSON.stringify({ text }),
       });
 
-      if (!res.ok) throw new Error('TTS failed');
+      if (!res.ok) throw new Error('Premium TTS not configured or failed');
 
       const blob = await res.blob();
       const audioUrl = URL.createObjectURL(blob);
@@ -88,9 +88,34 @@ export default function AssistantWidget() {
       await audio.play();
 
     } catch (e) {
-      console.error('Failed to play neural TTS, falling back to Web Speech', e);
+      // Fallback to Native Speech (deep male configuration)
       if ('speechSynthesis' in window) {
+        let voices = window.speechSynthesis.getVoices();
+        if (voices.length === 0) {
+          await new Promise(r => setTimeout(r, 100));
+          voices = window.speechSynthesis.getVoices();
+        }
+
+        const maleVoice = voices.find(v => v.lang.includes('ru') && (
+            v.name.toLowerCase().includes('pavel') || 
+            v.name.toLowerCase().includes('boris') || 
+            v.name.toLowerCase().includes('yuri') ||
+            v.name.toLowerCase().includes('male') ||
+            v.name.toLowerCase().includes('maxim')
+        ));
+
         const utt = new SpeechSynthesisUtterance(text);
+        if (maleVoice) {
+            utt.voice = maleVoice;
+            utt.pitch = 0.9;
+            utt.rate = 1.0;
+        } else {
+            const anyRu = voices.find(v => v.lang.includes('ru'));
+            if (anyRu) utt.voice = anyRu;
+            utt.pitch = 0.65;
+            utt.rate = 1.0;
+        }
+
         utt.lang = 'ru-RU';
         utt.onstart = () => setSpeaking(true);
         utt.onend = () => setSpeaking(false);

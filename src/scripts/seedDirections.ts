@@ -7,7 +7,10 @@ async function seed() {
   console.log('Seeding directions...');
   for (const dir of directions) {
     const existing = await Direction.findOne({ id: dir.id });
-    if (!existing) {
+    if (existing) {
+      await Direction.updateOne({ id: dir.id }, { $set: { ...dir, _id: undefined } });
+      console.log('Updated: ', dir.id);
+    } else {
       await Direction.create({ ...dir, _id: undefined });
       console.log('Created: ', dir.id);
     }

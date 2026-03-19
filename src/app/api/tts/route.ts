@@ -57,20 +57,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Fallback: Free Google Translate TTS (hacky but works as a decent fallback)
-    // Note: It limits to 200 chars per request, so we chunk it if too long, or just truncate.
-    const safeText = text.substring(0, 200);
-    const url = `https://translate.google.com/translate_tts?ie=UTF-8&tl=ru&client=tw-ob&q=${encodeURIComponent(safeText)}`;
-    
-    const res = await fetch(url);
-    if (res.ok) {
-       const audioBuffer = await res.arrayBuffer();
-       return new NextResponse(audioBuffer, {
-         headers: { 'Content-Type': 'audio/mpeg' },
-       });
-    }
-
-    return NextResponse.json({ error: 'All TTS endpoints failed' }, { status: 500 });
+    return NextResponse.json({ error: 'Premium TTS API endpoints not configured' }, { status: 501 });
 
   } catch (error) {
     console.error('TTS Error:', error);

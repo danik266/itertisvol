@@ -12,6 +12,8 @@ export interface IEvent extends Document {
   color: string;
   emoji: string;
   image?: string;
+  contentRu: string;
+  contentKz: string;
 }
 
 const EventSchema = new Schema<IEvent>({
@@ -26,7 +28,11 @@ const EventSchema = new Schema<IEvent>({
   color: { type: String, default: '' },
   emoji: { type: String, default: '' },
   image: { type: String, default: '' },
+  contentRu: { type: String, default: '' },
+  contentKz: { type: String, default: '' },
 });
 
-export default (mongoose.models.Event as Model<IEvent>) ||
-  mongoose.model<IEvent>('Event', EventSchema);
+if (mongoose.models.Event) {
+  delete mongoose.models.Event;
+}
+export default mongoose.model<IEvent>('Event', EventSchema);

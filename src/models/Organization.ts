@@ -6,6 +6,10 @@ export interface IOrganization extends Document {
   direction: string;
   descRu: string;
   descKz: string;
+  contentRu: string;
+  contentKz: string;
+  logo: string;
+  gallery: string[];
   city: string;
   phone: string;
   email: string;
@@ -19,6 +23,10 @@ const OrganizationSchema = new Schema<IOrganization>({
   direction: { type: String, required: true },
   descRu: { type: String, default: '' },
   descKz: { type: String, default: '' },
+  contentRu: { type: String, default: '' },
+  contentKz: { type: String, default: '' },
+  logo: { type: String, default: '' },
+  gallery: { type: [String], default: [] },
   city: { type: String, default: '' },
   phone: { type: String, default: '' },
   email: { type: String, default: '' },
@@ -26,5 +34,8 @@ const OrganizationSchema = new Schema<IOrganization>({
   volunteers: { type: Number, default: 0 },
 });
 
-export default (mongoose.models.Organization as Model<IOrganization>) ||
-  mongoose.model<IOrganization>('Organization', OrganizationSchema);
+if (mongoose.models.Organization) {
+  delete mongoose.models.Organization;
+}
+
+export default mongoose.model<IOrganization>('Organization', OrganizationSchema);
