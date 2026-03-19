@@ -3,7 +3,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useLang } from '@/lib/LangContext';
 import { MessageSquare, X, Send, Volume2, VolumeX, Mic, MicOff } from 'lucide-react';
-import Image from 'next/image';
 
 export default function AssistantWidget() {
   const { t } = useLang();
@@ -14,7 +13,6 @@ export default function AssistantWidget() {
   const [muted, setMuted] = useState(false);
   const [speaking, setSpeaking] = useState(false);
   const [listening, setListening] = useState(false);
-  const [mouthOpen, setMouthOpen] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
@@ -27,21 +25,10 @@ export default function AssistantWidget() {
   useEffect(() => {
     if (isOpen && messages.length === 0) {
       setMessages([
-        { role: 'assistant', text: t('Привет! Я ваш 2D виртуальный помощник. Чем могу помочь?', 'Сәлем! Мен сіздің виртуалды көмекшіңізбін. Қалай көмектесе аламын?') }
+        { role: 'assistant', text: t('Привет! Я ваш голосовой помощник. Чем могу помочь?', 'Сәлем! Мен сіздің дауыстық көмекшіңізбін. Қалай көмектесе аламын?') }
       ]);
     }
   }, [isOpen, messages.length, t]);
-
-  useEffect(() => {
-    if (!speaking) {
-      setMouthOpen(false);
-      return;
-    }
-    const interval = setInterval(() => {
-      setMouthOpen(prev => !prev);
-    }, 150);
-    return () => clearInterval(interval);
-  }, [speaking]);
 
   const toggleListening = () => {
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -151,9 +138,6 @@ export default function AssistantWidget() {
     setMuted(!muted);
   };
 
-  const avatarIdle = "/avatar-idle.png";
-  const avatarSpeak = "/avatar-speak.png";
-
   return (
     <>
       {/* DRAWER / MODAL */}
@@ -165,40 +149,16 @@ export default function AssistantWidget() {
         `}
       >
         {/* Header Options */}
-        <div className="absolute top-0 left-0 right-0 z-20 px-3 sm:px-4 py-3 flex items-center justify-between bg-gradient-to-b from-gray-950/90 to-transparent">
-           <span className="text-white font-semibold text-xs sm:text-sm uppercase tracking-wider pl-1 drop-shadow-md">AI Ведущий</span>
+        <div className="shrink-0 z-20 px-3 sm:px-4 py-3 flex items-center justify-between border-b border-gray-800 bg-gray-900">
+           <span className="text-white font-semibold text-xs sm:text-sm uppercase tracking-wider pl-1 drop-shadow-md">Голосовой помощник</span>
            <div className="flex items-center gap-2">
             <button onClick={toggleMute} className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center bg-gray-800/80 backdrop-blur-md rounded-full text-white hover:bg-gray-700/80 transition shadow-lg shrink-0" title={muted ? "Включить звук" : "Выключить звук"}>
               {muted ? <VolumeX size={16} className="sm:w-[18px] sm:h-[18px]" /> : <Volume2 size={16} className="sm:w-[18px] sm:h-[18px]" />}
             </button>
-            <button onClick={() => setIsOpen(false)} className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center bg-gray-800/80 backdrop-blur-md rounded-full text-white hover:bg-gray-700/80 transition shadow-lg shrink-0 block sm:hidden" title="Свернуть">
+            <button onClick={() => setIsOpen(false)} className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center bg-gray-800/80 backdrop-blur-md rounded-full text-white hover:bg-gray-700/80 transition shadow-lg shrink-0" title="Закрыть">
               <X size={18} className="sm:w-[20px] sm:h-[20px]" />
             </button>
           </div>
-        </div>
-
-        {/* 2D Avatar Container */}
-        <div className="relative w-full h-[45%] sm:h-[55%] min-h-[160px] bg-gradient-to-b from-slate-900 to-slate-950 shrink-0 flex items-end justify-center overflow-hidden border-b border-gray-800">
-            {speaking && (
-              <div className="absolute inset-0 bg-teal-500/10 blur-3xl animate-pulse"></div>
-            )}
-            <div className={`relative w-[85%] sm:w-[80%] h-[95%] sm:h-[90%] transition-transform duration-300 ease-in-out origin-bottom
-                ${speaking ? 'scale-[1.02] translate-y-1' : 'scale-100 animate-[pulse_4s_ease-in-out_infinite]'}
-            `}>
-                <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-700">
-                   <div className="text-6xl sm:text-8xl transition-all duration-100">{mouthOpen ? '😮' : '😐'}</div>
-                   <p className="text-[10px] sm:text-xs mt-3 sm:mt-4 text-center px-4 leading-tight">
-                     Добавьте<br/><span className="text-teal-500 font-bold">avatar-idle.png</span><br/>и<br/><span className="text-teal-500 font-bold">avatar-speak.png</span><br/>в папку /public
-                   </p>
-                </div>
-                <Image 
-                   src={mouthOpen ? avatarSpeak : avatarIdle}
-                   alt="2D Avatar"
-                   fill
-                   className="object-contain object-bottom drop-shadow-[0_10px_20px_rgba(0,0,0,0.5)] z-10"
-                   unoptimized
-                />
-            </div>
         </div>
 
         {/* Chat Area */}

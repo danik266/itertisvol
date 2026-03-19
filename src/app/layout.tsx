@@ -4,7 +4,6 @@ import { LangProvider } from '@/lib/LangContext';
 import { AuthProvider } from '@/lib/AuthContext';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
-import AssistantWidget from '@/components/AssistantWidget';
 import { DataProvider } from '@/lib/DataContext';
 
 export const metadata: Metadata = {
@@ -22,7 +21,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Header />
               <main>{children}</main>
               <Footer />
-              <AssistantWidget />
             </DataProvider>
           </LangProvider>
         </AuthProvider>

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useLang } from '@/lib/LangContext';
 import { useData } from '@/lib/DataContext';
 import { Sparkles, Grid, Users, Shield, Plus, Heart, MonitorCheck, TreePine, Dog } from 'lucide-react';
+import AIGuide from '@/components/AIGuide';
 
 interface EventData {
   id: number;
@@ -284,6 +285,8 @@ export default function HomePage() {
         </Link>
       </section>
       
+      {/* Interactive AI Guide Widget */}
+      <AIGuide />
     </div>
   );
 }
