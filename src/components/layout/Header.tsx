@@ -17,7 +17,7 @@ export default function Header() {
   };
 
   const nav = [
-    { href: '/', labelRu: 'Главная', labelKz: 'Басты бет' },
+    { href: '/main', labelRu: 'Главная', labelKz: 'Басты бет' },
     { href: '/organizations', labelRu: 'Организации', labelKz: 'Ұйымдар' },
     { href: '/directions', labelRu: 'Направления', labelKz: 'Бағыттар' },
     { href: '/news', labelRu: 'Новости', labelKz: 'Жаңалықтар' },
@@ -28,7 +28,7 @@ export default function Header() {
     <header className="sticky top-0 z-50 bg-white shadow-sm border-b border-gray-100">
       <div className="max-w-7xl mx-auto px-4 flex items-center justify-between h-16">
         {/* Logo */}
-        <Link href="/" className="flex flex-col leading-none group">
+        <Link href="/main" className="flex flex-col leading-none group">
           <div className="flex items-center gap-1">
             <span className="font-display font-light text-xl tracking-tight text-slate-700 transition-colors group-hover:text-slate-900">IT</span>
             <span className="font-display font-bold text-xl tracking-tight text-teal-500 transition-colors group-hover:text-teal-600">ERTIS</span>

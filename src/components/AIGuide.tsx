@@ -183,7 +183,7 @@ export default function AIGuide() {
     const playGreeting = () => {
       if (greetingPlayedRef.current) return;
       greetingPlayedRef.current = true;
-      speak(greeting, lang);
+      // speak(greeting, lang); // Disabled automatic greeting sound as requested
       cleanup();
     };
 
@@ -347,12 +347,12 @@ export default function AIGuide() {
           MOBILE TRIGGER — персонаж большой внизу справа
       ════════════════════════════════════════════ */}
       {!isOpen && (
-        <div className="fixed bottom-[-3rem] right-[-3rem] z-50 md:hidden flex flex-col items-end">
+        <div className="fixed bottom-[-1.5rem] left-[-2.5rem] z-50 md:hidden flex flex-col items-start">
           {/* Пузырь */}
           {bubbleText && (
-            <div className="mb-2 mr-16 bg-white text-slate-800 text-xs font-semibold py-2 px-3 rounded-2xl shadow-xl border border-slate-100 max-w-[180px] text-center relative">
+            <div className="mb-2 ml-20 bg-white text-slate-800 text-xs font-semibold py-2 px-3 rounded-2xl shadow-xl border border-slate-100 max-w-[180px] text-center relative z-20">
               {bubbleText}
-              <div className="absolute -bottom-2 right-4 w-4 h-4 bg-white border-b border-r border-slate-100 transform rotate-45" />
+              <div className="absolute -bottom-2 left-6 w-4 h-4 bg-white border-b border-r border-slate-100 transform rotate-45" />
             </div>
           )}
 
@@ -361,7 +361,7 @@ export default function AIGuide() {
             {/* Иконка звука поверх персонажа */}
             <button
               onClick={toggleMute}
-              className="absolute top-4 left-[3rem] bg-white shadow-lg rounded-full p-2 text-[#1a7f84] border border-slate-100 z-10"
+              className="absolute top-4 right-[1.5rem] bg-white shadow-lg rounded-full p-2 text-[#1a7f84] border border-slate-100 z-30"
             >
               {MuteIcon18}
             </button>
@@ -370,8 +370,7 @@ export default function AIGuide() {
               <img
                 src="/images/guide_hello.png"
                 alt="AI Guide"
-
-                className="w-[35vw] h-auto object-contain"
+                className="w-[160px] h-auto object-contain"
                 style={{ mixBlendMode: 'multiply' }}
               />
             </div>
