@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { useLang } from '@/lib/LangContext';
 import { useAuth } from '@/lib/AuthContext';
-import { Menu, X, Eye, User } from 'lucide-react';
+import { Menu, X, Eye, User, Sparkles } from 'lucide-react';
 
 export default function Header() {
   const { lang, setLang, t } = useLang();
@@ -28,14 +28,13 @@ export default function Header() {
     <header className="sticky top-0 z-50 bg-white shadow-sm border-b border-gray-100">
       <div className="max-w-7xl mx-auto px-4 flex items-center justify-between h-16">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-lg bg-teal-gradient flex items-center justify-center">
-            <span className="text-white font-display font-bold text-sm">IT</span>
+        <Link href="/" className="flex flex-col leading-none group">
+          <div className="flex items-center gap-1">
+            <span className="font-display font-light text-xl tracking-tight text-slate-700 transition-colors group-hover:text-slate-900">IT</span>
+            <span className="font-display font-bold text-xl tracking-tight text-teal-500 transition-colors group-hover:text-teal-600">ERTIS</span>
+            <Sparkles className="text-yellow-400 fill-yellow-400 w-4 h-4 -mt-1 drop-shadow-sm" />
           </div>
-          <span className="font-display font-bold text-base hidden sm:block">
-            <span className="text-teal-500">ERTIS</span>
-            <span className="text-orange-500"> VOL</span>
-          </span>
+          <div className="font-display font-black text-[10px] tracking-[0.25em] text-orange-500 ml-0.5 mt-[-2px]">VOLUNTEER</div>
         </Link>
 
         {/* Desktop nav */}

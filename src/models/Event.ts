@@ -12,6 +12,7 @@ export interface IEvent extends Document {
   color: string;
   emoji: string;
   image?: string;
+  images?: string[];
   contentRu: string;
   contentKz: string;
 }
@@ -28,6 +29,7 @@ const EventSchema = new Schema<IEvent>({
   color: { type: String, default: '' },
   emoji: { type: String, default: '' },
   image: { type: String, default: '' },
+  images: { type: [String], default: [] },
   contentRu: { type: String, default: '' },
   contentKz: { type: String, default: '' },
 });

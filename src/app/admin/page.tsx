@@ -445,33 +445,64 @@ export default function AdminPage() {
                   <span className="text-sm font-bold text-gray-700 mb-1 block">Название (RU)</span>
                   <input required className="w-full p-3 bg-gray-50 rounded-xl border border-gray-200 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500" value={editingEvent.titleRu || ''} onChange={e => setEditingEvent({...editingEvent, titleRu: e.target.value})} />
                 </label>
-                <label className="block">
-                  <span className="text-sm font-bold text-gray-700 mb-1 block">Эмодзи или обложка (загрузить)</span>
-                  <div className="flex gap-4 items-center">
-                    {editingEvent.image ? (
-                      <div className="w-20 h-20 rounded-xl overflow-hidden border border-gray-200 relative flex-shrink-0 bg-gray-50">
-                        <img src={editingEvent.image} className="w-full h-full object-cover" />
-                        <button type="button" onClick={() => setEditingEvent({...editingEvent, image: ''})} className="absolute top-1 right-1 bg-white rounded-full p-1 text-red-500 shadow hover:bg-red-50">✕</button>
+                <label className="block sm:col-span-2">
+                  <span className="text-sm font-bold text-gray-700 mb-2 block">Галерея изображений (загрузите несколько)</span>
+                  <div className="flex flex-wrap gap-4 items-start">
+                    {/* Event Emoji fallback if no images */}
+                    {(!editingEvent.images || editingEvent.images.length === 0) && !editingEvent.image && (
+                      <div className="w-24 h-24 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200 flex items-center justify-center text-3xl">
+                        <input className="w-full h-full bg-transparent text-center outline-none" value={editingEvent.emoji || ''} onChange={e => setEditingEvent({...editingEvent, emoji: e.target.value})} placeholder="🚀" />
                       </div>
-                    ) : (
-                      <input className="w-20 p-3 bg-gray-50 rounded-xl border border-gray-200 text-center text-xl" value={editingEvent.emoji || ''} onChange={e => setEditingEvent({...editingEvent, emoji: e.target.value})} placeholder="🚀" />
                     )}
+
+                    {/* Image Thumbnails */}
+                    {(editingEvent.images || (editingEvent.image ? [editingEvent.image] : [])).map((img: string, idx: number) => (
+                      <div key={idx} className="w-24 h-24 rounded-2xl overflow-hidden border border-gray-100 relative group shadow-sm bg-gray-50">
+                        <img src={img} className="w-full h-full object-cover" />
+                        <button 
+                          type="button" 
+                          onClick={() => {
+                            const newImages = (editingEvent.images || [editingEvent.image]).filter((_: any, i: number) => i !== idx);
+                            setEditingEvent({
+                              ...editingEvent, 
+                              images: newImages,
+                              image: newImages[0] || ''
+                            });
+                          }} 
+                          className="absolute top-1 right-1 bg-white/90 rounded-full p-1 text-red-500 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-50"
+                        >
+                          <X size={14} />
+                        </button>
+                        {idx === 0 && (
+                          <div className="absolute bottom-0 left-0 right-0 bg-teal-500 text-[8px] text-white font-bold text-center py-0.5">ОБЛОЖКА</div>
+                        )}
+                      </div>
+                    ))}
                     
-                    <label className="cursor-pointer bg-blue-50 hover:bg-blue-100 text-blue-600 px-4 py-2 rounded-xl text-sm font-bold transition-colors whitespace-nowrap">
-                      Загрузить фото
-                      <input type="file" accept="image/*" className="hidden" onChange={(e) => {
-                        const file = e.target.files?.[0];
-                        if (file) {
-                          if (file.size > 1 * 1024 * 1024) {
-                            alert('Файл слишком большой. Максимум 1MB');
+                    {/* Upload Button */}
+                    <label className="w-24 h-24 rounded-2xl border-2 border-dashed border-gray-200 flex flex-col items-center justify-center gap-1 cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-all text-gray-400 hover:text-blue-500">
+                      <Plus size={20} />
+                      <span className="text-[10px] font-bold">Добавить</span>
+                      <input type="file" accept="image/*" multiple className="hidden" onChange={(e) => {
+                        const files = Array.from(e.target.files || []);
+                        files.forEach(file => {
+                          if (file.size > 2 * 1024 * 1024) {
+                            alert(`Файл ${file.name} слишком большой. Максимум 2MB`);
                             return;
                           }
                           const reader = new FileReader();
                           reader.onloadend = () => {
-                            setEditingEvent({ ...editingEvent, image: reader.result as string, emoji: '' });
+                            const currentImages = editingEvent.images || (editingEvent.image ? [editingEvent.image] : []);
+                            const newImages = [...currentImages, reader.result as string];
+                            setEditingEvent({ 
+                              ...editingEvent, 
+                              images: newImages, 
+                              image: newImages[0], // Set first as main image
+                              emoji: '' 
+                            });
                           };
                           reader.readAsDataURL(file);
-                        }
+                        });
                       }} />
                     </label>
                   </div>

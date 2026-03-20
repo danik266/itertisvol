@@ -30,6 +30,7 @@ export async function GET(
         color: e.color,
         emoji: e.emoji,
         image: e.image,
+        images: e.images,
       },
     });
   } catch (error) {

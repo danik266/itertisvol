@@ -18,8 +18,8 @@ export default function AIGuide() {
       role: 'assistant',
       content:
         lang === 'kz'
-          ? 'Сәлеметсіз бе! Мен IT ERTIS VOLUNTEER виртуалды гидімін. Қандай сұрақтарыңыз бар?'
-          : 'Здравствуйте! Я ваш виртуальный гид по IT ERTIS VOLUNTEER. Чем могу помочь?',
+          ? 'Қандай сұрақтарыңыз бар?'
+          : 'Какие у вас есть вопросы?',
     },
   ]);
   const [input, setInput] = useState('');
@@ -30,6 +30,7 @@ export default function AIGuide() {
   const [mounted, setMounted] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const mutedRef = useRef(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     const saved = localStorage.getItem('ai_guide_muted') === 'true';
@@ -44,42 +45,128 @@ export default function AIGuide() {
       const next = !prev;
       mutedRef.current = next;
       localStorage.setItem('ai_guide_muted', String(next));
-      if (next) window.speechSynthesis?.cancel();
+      if (next) {
+        window.speechSynthesis?.cancel();
+        if (audioRef.current) {
+          audioRef.current.pause();
+          audioRef.current.src = "";
+        }
+      }
       return next;
     });
   }, []);
 
   // ── Speak ─────────────────────────────────────────────────────────────────────
-  const speak = useCallback((text: string, currentLang: string) => {
-    if (typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+  const speak = useCallback(async (text: string, currentLang: string) => {
+    if (typeof window === 'undefined') return;
     if (mutedRef.current) return;
+
+    const voice = currentLang === 'kz' ? 'kk-KZ-DauletNeural' : 'ru-RU-DmitryNeural';
+    console.log(`TTS: Initiating ${voice} for: "${text.substring(0, 30)}..."`);
+
+    // 1. DIRECT Neural TTS via stable public proxy (Bypasses server blocks/422/501)
+    try {
+      // kuku.lu is an extremely stable, high-availability Edge TTS relay
+      const directUrl = `https://tts.kuku.lu/edge?voice=${voice}&text=${encodeURIComponent(text)}`;
+      const res = await fetch(directUrl);
+      if (res.ok) {
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        
+        if (audioRef.current) {
+          audioRef.current.pause();
+          audioRef.current.src = "";
+        }
+
+        const audio = new Audio(url);
+        audioRef.current = audio;
+        audio.playbackRate = 0.98;
+        
+        audio.play().then(() => console.log(`✓ Direct Neural (${voice}) played`))
+        .catch(e => {
+          console.warn("Direct play failed, trying backend...", e);
+          tryBackendSpeak(text, currentLang);
+        });
+        return;
+      }
+    } catch (err) {
+      console.warn('Direct proxy failed, trying backend...', err);
+    }
+
+    // 2. Try Backend TTS (API)
+    tryBackendSpeak(text, currentLang);
+  }, []);
+
+  const tryBackendSpeak = async (text: string, currentLang: string) => {
+    try {
+      const res = await fetch('/api/tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, language: currentLang }),
+      });
+
+      if (res.ok) {
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        if (audioRef.current) {
+          audioRef.current.pause();
+          audioRef.current.src = "";
+        }
+        const audio = new Audio(url);
+        audioRef.current = audio;
+        audio.playbackRate = 0.98;
+        audio.play().then(() => console.log('✓ Backend Neural played'))
+        .catch(() => fallbackSpeak(text, currentLang));
+      } else {
+        fallbackSpeak(text, currentLang);
+      }
+    } catch (err) {
+      fallbackSpeak(text, currentLang);
+    }
+  };
+
+  // 1.2 Fallback to Local Browser TTS (Robotic but works everywhere)
+  const fallbackSpeak = (text: string, currentLang: string) => {
+    if (!('speechSynthesis' in window)) return;
     window.speechSynthesis.cancel();
+    
     const trySpeak = () => {
       if (mutedRef.current) return;
       try {
         const utter = new SpeechSynthesisUtterance(text);
         utter.lang = currentLang === 'kz' ? 'kk-KZ' : 'ru-RU';
-        utter.pitch = 0.85;
-        utter.rate = 1.0;
+        
         const voices = window.speechSynthesis.getVoices();
         const prefix = currentLang === 'kz' ? 'kk' : 'ru';
-        const voice =
-          voices.find(
-            (v) =>
-              v.lang.startsWith(prefix) &&
-              (v.name.toLowerCase().includes('male') ||
-                v.name.includes('Pavel') ||
-                v.name.includes('Yuri'))
-          ) ?? voices.find((v) => v.lang.startsWith(prefix));
-        if (voice) utter.voice = voice;
+        
+        const voice = 
+          voices.find(v => v.lang.startsWith(prefix) && v.name.includes('Online')) ||
+          voices.find(v => v.lang.startsWith(prefix) && (v.name.includes('Yuri') || v.name.includes('Pavel') || v.name.includes('Google'))) ||
+          voices.find(v => v.lang.startsWith(prefix) && v.name.toLowerCase().includes('male')) ||
+          voices.find(v => v.lang.startsWith(prefix));
+
+        if (voice) {
+          utter.voice = voice;
+          utter.pitch = voice.name.toLowerCase().includes('male') ? 0.95 : 0.75;
+          utter.rate = 1.0;
+        } else {
+          utter.pitch = 0.75;
+          utter.rate = 1.0;
+        }
+        
         window.speechSynthesis.resume();
         window.speechSynthesis.speak(utter);
       } catch (err) {
-        console.error('Speech error:', err);
+        console.error('Local TTS error:', err);
       }
     };
-    setTimeout(trySpeak, 150);
-  }, []);
+
+    if (window.speechSynthesis.getVoices().length === 0) {
+      window.speechSynthesis.onvoiceschanged = trySpeak;
+    } else {
+      setTimeout(trySpeak, 50);
+    }
+  };
 
   // ── Greeting ──────────────────────────────────────────────────────────────────
   const greetingPlayedRef = useRef(false);
@@ -87,8 +174,8 @@ export default function AIGuide() {
   useEffect(() => {
     const greeting =
       lang === 'kz'
-        ? 'Сәлеметсіз бе! Мен IT ERTIS VOLUNTEER виртуалды гидімін. Қандай сұрақтарыңыз бар?'
-        : 'Здравствуйте! Я ваш виртуальный гид по IT ERTIS VOLUNTEER. Чем могу помочь?';
+        ? 'Қандай сұрақтарыңыз бар?'
+        : 'Какие у вас есть вопросы?';
 
     setBubbleText(greeting);
     const bubbleTimer = setTimeout(() => setBubbleText(null), 7000);
@@ -274,7 +361,7 @@ export default function AIGuide() {
             {/* Иконка звука поверх персонажа */}
             <button
               onClick={toggleMute}
-              className="absolute top-6 left-[4rem] bg-white shadow-lg rounded-full p-2 text-[#1a7f84] border border-slate-100 z-10"
+              className="absolute top-4 left-[3rem] bg-white shadow-lg rounded-full p-2 text-[#1a7f84] border border-slate-100 z-10"
             >
               {MuteIcon18}
             </button>
@@ -284,7 +371,7 @@ export default function AIGuide() {
                 src="/images/guide_hello.png"
                 alt="AI Guide"
 
-                className="w-[60vw] h-auto object-contain"
+                className="w-[35vw] h-auto object-contain"
                 style={{ mixBlendMode: 'multiply' }}
               />
             </div>
@@ -359,12 +446,12 @@ export default function AIGuide() {
 
         {/* Персонаж десктоп */}
         <div
-          className="relative cursor-pointer group flex-shrink-0 z-20 translate-y-[8rem]"
+          className="relative cursor-pointer group flex-shrink-0 z-20 translate-y-[4rem]"
           onClick={() => setIsOpen(!isOpen)}
         >
           <button
             onClick={toggleMute}
-            className="absolute right-16 bottom-[10rem] bg-white shadow-lg rounded-full p-2.5 text-[#1a7f84] hover:scale-110 transition-transform z-40 border border-slate-100"
+            className="absolute right-10 bottom-[6rem] bg-white shadow-lg rounded-full p-2.5 text-[#1a7f84] hover:scale-110 transition-transform z-40 border border-slate-100"
           >
             {MuteIcon18}
           </button>
@@ -379,7 +466,7 @@ export default function AIGuide() {
             <img
               src={isOpen ? '/images/guide_character.png' : '/images/guide_hello.png'}
               alt="AI Guide"
-              className="w-[32rem] lg:w-[38rem] h-auto max-h-[90vh] object-contain group-hover:scale-105 transition-transform origin-bottom"
+              className="w-[18rem] lg:w-[22rem] h-auto max-h-[90vh] object-contain group-hover:scale-105 transition-transform origin-bottom"
               style={{ mixBlendMode: 'multiply' }}
             />
           </div>

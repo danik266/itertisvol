@@ -5,6 +5,8 @@ import { useLang } from '@/lib/LangContext';
 import { useData } from '@/lib/DataContext';
 import { Sparkles, Grid, Users, Shield, Plus, Heart, MonitorCheck, TreePine, Dog } from 'lucide-react';
 import AIGuide from '@/components/AIGuide';
+import IntroVideo from '@/components/IntroVideo';
+import { AnimatePresence } from 'framer-motion';
 
 interface EventData {
   id: number;
@@ -24,6 +26,7 @@ export default function HomePage() {
   const { t } = useLang();
   const { directions } = useData();
   const [events, setEvents] = useState<EventData[]>([]);
+  const [showIntro, setShowIntro] = useState(true);
 
   useEffect(() => {
     fetch('/api/events')
@@ -58,44 +61,51 @@ export default function HomePage() {
   };
 
   return (
-    <div className="min-h-screen font-sans">
+    <>
+      <AnimatePresence>
+        {showIntro && (
+          <IntroVideo onComplete={() => setShowIntro(false)} />
+        )}
+      </AnimatePresence>
+
+      <div className={`min-h-screen font-sans transition-opacity duration-1000 ${showIntro ? 'opacity-0 h-screen overflow-hidden' : 'opacity-100'}`}>
       {/* HERO SECTION */}
-      <section className="relative overflow-hidden pt-20 pb-40 md:pb-[18rem] text-white bg-[#1a7f84]">
+      <section className="relative overflow-hidden pt-20 pb-40 md:pt-24 md:pb-[22rem] text-white bg-[#1a7f84]">
         {/* High Resolution Background Image with seamless physical masking */}
         <div className="absolute inset-0 z-0">
           <img 
-            src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&q=80&w=2560"
+            src="/IMG_9879.JPG"
             alt="Volunteers Background"
-            className="absolute right-0 top-0 w-full h-full object-cover object-[center_top] opacity-60 mix-blend-luminosity"
+            className="absolute right-0 top-0 w-full h-full object-cover object-[center_right]"
             style={{ 
-              maskImage: 'linear-gradient(to right, transparent 0%, transparent 35%, black 75%, black 100%)', 
-              WebkitMaskImage: 'linear-gradient(to right, transparent 0%, transparent 35%, black 75%, black 100%)' 
+              maskImage: 'linear-gradient(to right, transparent 0%, transparent 40%, black 80%, black 100%)', 
+              WebkitMaskImage: 'linear-gradient(to right, transparent 0%, transparent 40%, black 80%, black 100%)' 
             }}
           />
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 relative z-20">
-          <div className="max-w-lg">
-            <div className="mb-8">
+        <div className="max-w-7xl mx-auto px-6 lg:px-12 relative z-20">
+          <div className="max-w-xl">
+            <div className="mb-10">
               <div className="flex items-center gap-2">
-                <span className="font-display font-light text-[38px] sm:text-5xl tracking-wide">IT</span>
-                <span className="font-display font-bold text-[38px] sm:text-5xl tracking-wide">ERTIS</span>
-                <Sparkles className="text-yellow-400 fill-yellow-400 drop-shadow-md -mt-2 sm:-mt-3 w-6 h-6 sm:w-8 sm:h-8 shrink-0" />
+                <span className="font-display font-light text-[32px] sm:text-5xl tracking-tight">IT</span>
+                <span className="font-display font-bold text-[32px] sm:text-5xl tracking-tight">ERTIS</span>
+                <Sparkles className="text-yellow-400 fill-yellow-400 drop-shadow-md -mt-1 sm:-mt-2 w-6 h-6 sm:w-9 sm:h-9 shrink-0" />
               </div>
-              <div className="font-display font-extrabold text-[28px] sm:text-4xl tracking-widest pl-1 sm:pl-[3.5rem] mt-0.5 sm:mt-1 shadow-black/10 text-shadow-sm">VOLUNTEER</div>
+              <div className="font-display font-bold text-[20px] sm:text-3xl tracking-[0.25em] pl-0.5 sm:pl-1 mt-[-2px] sm:mt-[-4px]">VOLUNTEER</div>
             </div>
 
-            <h1 className="text-[32px] sm:text-4xl md:text-[44px] font-extrabold leading-tight sm:leading-tight mb-8 drop-shadow-md">
+            <h1 className="text-[22px] sm:text-3xl md:text-[34px] font-bold leading-tight mb-10 drop-shadow-md">
               {t('Технологии, которые', 'Жаңа технологиялар')} <br />
               {t('помогают', 'көмектесетін')} <br />
               {t('менять мир', 'әлемді өзгертуге')}
             </h1>
             
-            <div className="flex flex-col sm:flex-row gap-4 mt-8">
-              <Link href="/auth" className="bg-[#ff8a00] hover:bg-[#ff9d2e] text-white px-8 py-3.5 rounded-full font-bold text-center transition-all shadow-[0_4px_14px_0_rgba(255,138,0,0.39)] hover:shadow-[0_6px_20px_rgba(255,138,0,0.23)] hover:-translate-y-0.5">
+            <div className="flex flex-col sm:flex-row gap-5">
+              <Link href="/auth" className="bg-orange-500 hover:bg-orange-600 text-white px-10 py-3.5 rounded-full font-bold text-center transition-all shadow-lg hover:shadow-orange-500/40 hover:-translate-y-0.5">
                 {t('Стать волонтёром', 'Волонтер болу')}
               </Link>
-              <Link href="/directions" className="border-2 border-white/90 hover:bg-white hover:text-[#1e858a] text-white px-8 py-3.5 rounded-full font-bold text-center transition-all">
+              <Link href="/directions" className="border-2 border-white/70 hover:bg-white/10 text-white px-10 py-3.5 rounded-full font-bold text-center transition-all">
                 {t('Узнать больше', 'Көбірек білу')}
               </Link>
             </div>
@@ -287,6 +297,7 @@ export default function HomePage() {
       
       {/* Interactive AI Guide Widget */}
       <AIGuide />
-    </div>
+      </div>
+    </>
   );
 }

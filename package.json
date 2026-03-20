@@ -10,8 +10,10 @@
     "seed": "npx tsx src/scripts/seed.ts"
   },
   "dependencies": {
+    "@google-cloud/text-to-speech": "^6.4.0",
     "bcryptjs": "^3.0.3",
     "clsx": "^2.1.1",
+    "framer-motion": "^12.38.0",
     "jose": "^6.2.1",
     "lucide-react": "^0.383.0",
     "mongoose": "^9.3.1",

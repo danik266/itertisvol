@@ -1,63 +1,133 @@
 import { NextRequest, NextResponse } from 'next/server';
+import TextToSpeech from "@google-cloud/text-to-speech";
+
+// Initialize Google TTS client if key is present
+let googleClient: any = null;
+if (process.env.GOOGLE_TTS_API_KEY) {
+  try {
+    googleClient = new TextToSpeech.TextToSpeechClient({
+      apiKey: process.env.GOOGLE_TTS_API_KEY,
+    });
+  } catch (e) {
+    console.error('Google TTS Client Init failed:', e);
+  }
+}
 
 export async function POST(req: NextRequest) {
   try {
-    const { text } = await req.json();
-
+    const { text, language } = await req.json();
+    const lang = language === 'kz' ? 'kz' : 'ru';
+    
     if (!text) {
       return NextResponse.json({ error: 'No text provided' }, { status: 400 });
     }
 
-    const openaiKey = process.env.OPENAI_API_KEY;
-    const elevenLabsKey = process.env.ELEVENLABS_API_KEY;
-
-    if (elevenLabsKey) {
-      // Use ElevenLabs (Voice ID: 'EXAVITQu4vr4xnSDxMaL' is a popular one, or 'pFZP5JQG7iQjIQuC4Bku')
-      const voiceId = 'pNInz6obpgDQGcFmaJcg'; // Adam (Russian supported on multilingual v2)
-      const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
-        method: 'POST',
-        headers: {
-          'xi-api-key': elevenLabsKey,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          text: text,
-          model_id: 'eleven_multilingual_v2',
-        }),
-      });
-
-      if (res.ok) {
-        const audioBuffer = await res.arrayBuffer();
-        return new NextResponse(audioBuffer, {
-          headers: { 'Content-Type': 'audio/mpeg' },
+    // 0. Official ISSAI Mangisoz TTS (The Absolute Gold Standard for Kazakh)
+    const mangisozKey = process.env.MANGISOZ_API_KEY;
+    if (lang === 'kz' && mangisozKey) {
+      try {
+        console.log('TTS: Trying Official Mangisoz (ISSAI)...');
+        const params = new URLSearchParams({
+          text,
+          lang: "kk",
+          speaker: "male",
         });
+        const mRes = await fetch("https://mangisoz.nu.edu.kz/backend/api/v1/tts/audio", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "X-API-Key": mangisozKey,
+          },
+          body: params,
+          signal: AbortSignal.timeout(10000)
+        });
+        if (mRes.ok) {
+          console.log('Success: Mangisoz (ISSAI)');
+          const buffer = await mRes.arrayBuffer();
+          return new NextResponse(buffer, { headers: { "Content-Type": "audio/wav" } });
+        }
+      } catch (e: any) {
+        console.warn('Mangisoz API failed, falling back:', e.message);
       }
     }
 
-    if (openaiKey) {
-      // Use OpenAI TTS
-      const res = await fetch('https://api.openai.com/v1/audio/speech', {
-        method: 'POST',
+    // 1. Direct Microsoft Edge Neural TTS (Daulet/Dmitry)
+    // Primary fallback / Russian choice: Best general neural quality.
+    try {
+      const voice = lang === 'kz' ? 'kk-KZ-DauletNeural' : 'ru-RU-DmitryNeural';
+      console.log(`TTS: Trying Direct Edge Neural (${voice})...`);
+      
+      const audioUrl = `https://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1?TrustedClientToken=6A5AA1D4EAFF4E97A7C030823F7E3F42&VoiceName=${voice}&Text=${encodeURIComponent(text)}&OutputFormat=audio-24khz-48kbitrate-mono-mp3`;
+
+      const msRes = await fetch(audioUrl, {
+        method: 'GET',
         headers: {
-          'Authorization': `Bearer ${openaiKey}`,
-          'Content-Type': 'application/json',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+          'X-Microsoft-OutputFormat': 'audio-24khz-48kbitrate-mono-mp3'
         },
-        body: JSON.stringify({
-          model: 'tts-1',
-          input: text,
-          voice: 'onyx', // 'onyx' or 'echo' for male, 'nova' or 'shimmer' for female
-        }),
+        signal: AbortSignal.timeout(5000)
       });
 
-      if (res.ok) {
-        const audioBuffer = await res.arrayBuffer();
-        return new NextResponse(audioBuffer, {
-          headers: { 'Content-Type': 'audio/mpeg' },
+      if (msRes.ok) {
+        console.log(`Success: Microsoft Edge Neural (${voice})`);
+        const buffer = await msRes.arrayBuffer();
+        return new NextResponse(buffer, { headers: { 'Content-Type': 'audio/mpeg' } });
+      }
+    } catch (err: any) {
+      console.warn('Edge TTS Error:', err.message);
+    }
+
+    // 2. Official Google Cloud TTS (Premium Fallback)
+    if (googleClient) {
+      try {
+        console.log('TTS: Trying Google Cloud TTS (Official)...');
+        const [response] = await googleClient.synthesizeSpeech({
+          input: { text },
+          voice: {
+            languageCode: lang === 'kz' ? 'kk-KZ' : 'ru-RU',
+            ssmlGender: 'MALE',
+            name: lang === 'kz' ? 'kk-KZ-Standard-A' : 'ru-RU-Wavenet-B'
+          },
+          audioConfig: { audioEncoding: 'MP3' },
         });
+
+        if (response.audioContent) {
+          console.log('Success: Google Cloud TTS');
+          return new NextResponse(new Uint8Array(response.audioContent as Buffer), {
+            headers: { 'Content-Type': 'audio/mpeg' },
+          });
+        }
+      } catch (err: any) {
+        console.warn('Google Cloud TTS failed:', err.message);
       }
     }
 
-    return NextResponse.json({ error: 'Premium TTS API endpoints not configured' }, { status: 501 });
+    // 3. Reliable Proxy Fallback for Edge TTS
+    try {
+      const voice = lang === 'kz' ? 'kk-KZ-DauletNeural' : 'ru-RU-DmitryNeural';
+      const proxyUrl = `https://tts.cypro.ru/api/tts?text=${encodeURIComponent(text)}&voice=${voice}`;
+      console.log('TTS: Trying Community Proxy...');
+      const pRes = await fetch(proxyUrl, { signal: AbortSignal.timeout(5000) });
+      if (pRes.ok) {
+        console.log('Success: Edge TTS Proxy');
+        const buffer = await pRes.arrayBuffer();
+        return new NextResponse(buffer, { headers: { 'Content-Type': 'audio/mpeg' } });
+      }
+    } catch (e) {}
+
+    // 4. Final Failsafe: Google Translate (Free Public API)
+    try {
+      const gLang = lang === 'kz' ? 'kk' : 'ru';
+      console.log('TTS: Final Failsafe (Google Translate Public)...');
+      const gRes = await fetch(`https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(text)}&tl=${gLang}&client=tw-ob`);
+      if (gRes.ok) {
+        console.log('Success: Google Translate Public');
+        const buffer = await gRes.arrayBuffer();
+        return new NextResponse(buffer, { headers: { 'Content-Type': 'audio/mpeg' } });
+      }
+    } catch (e) {}
+
+    return NextResponse.json({ error: 'All TTS failed' }, { status: 501 });
 
   } catch (error) {
     console.error('TTS Error:', error);
