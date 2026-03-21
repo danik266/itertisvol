@@ -5,6 +5,7 @@ import { AuthProvider } from '@/lib/AuthContext';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { DataProvider } from '@/lib/DataContext';
+import SiteProtection from '@/components/SiteProtection';
 
 export const metadata: Metadata = {
   title: 'IT Ertis Volunteer',
@@ -14,7 +15,8 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="kk">
-      <body>
+      <body className="select-none">
+        <SiteProtection />
         <AuthProvider>
           <LangProvider>
             <DataProvider>
