@@ -58,52 +58,90 @@ export default function MainPage() {
 
   return (
     <div className="min-h-screen font-sans">
-      {/* HERO SECTION */}
-      <section className="relative overflow-hidden pt-20 pb-40 md:pt-24 md:pb-[22rem] text-white bg-[#1a7f84]">
-        <div className="absolute inset-0 z-0">
-          <img 
-            src="/IMG_9879.JPG"
-            alt="Volunteers Background"
-            className="absolute right-0 top-0 w-full h-full object-cover object-[center_right]"
-            style={{ 
-              maskImage: 'linear-gradient(to right, transparent 0%, transparent 40%, black 80%, black 100%)', 
-              WebkitMaskImage: 'linear-gradient(to right, transparent 0%, transparent 40%, black 80%, black 100%)' 
-            }}
-          />
-        </div>
-
-        <div className="max-w-7xl mx-auto px-6 lg:px-12 relative z-20">
-          <div className="max-w-xl">
-            <div className="mb-10">
-              <div className="flex items-center gap-2">
-                <span className="font-display font-light text-[32px] sm:text-5xl tracking-tight">IT</span>
-                <span className="font-display font-bold text-[32px] sm:text-5xl tracking-tight">ERTIS</span>
-                <Sparkles className="text-yellow-400 fill-yellow-400 drop-shadow-md -mt-1 sm:-mt-2 w-6 h-6 sm:w-9 sm:h-9 shrink-0" />
+      {/* HERO SECTION — Full image background + glassmorphism text card */}
+      <section className="relative overflow-hidden text-white">
+        {/* === MOBILE LAYOUT === */}
+        <div className="sm:hidden bg-[#1a7f84]">
+          {/* Photo — shows at natural aspect ratio */}
+          <div className="relative">
+            <img 
+              src="/IMG_9879.JPG"
+              alt="Volunteers Background"
+              className="w-full"
+            />
+            {/* Gradient fade at bottom of photo */}
+            <div className="absolute inset-x-0 bottom-0 h-28 bg-gradient-to-t from-[#1a7f84] via-[#1a7f84]/80 to-transparent" />
+          </div>
+          {/* Card content */}
+          <div className="px-6 pb-16 -mt-4">
+            <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl p-8 max-w-lg shadow-2xl shadow-black/20">
+              <div className="mb-8">
+                <div className="flex items-center gap-2">
+                  <span className="font-display font-light text-[32px] tracking-tight">IT</span>
+                  <span className="font-display font-bold text-[32px] tracking-tight">ERTIS</span>
+                  <Sparkles className="text-yellow-400 fill-yellow-400 drop-shadow-md -mt-1 w-6 h-6 shrink-0" />
+                </div>
+                <div className="font-display font-bold text-[20px] tracking-[0.25em] pl-0.5 mt-[-2px]">VOLUNTEER</div>
               </div>
-              <div className="font-display font-bold text-[20px] sm:text-3xl tracking-[0.25em] pl-0.5 sm:pl-1 mt-[-2px] sm:mt-[-4px]">VOLUNTEER</div>
-            </div>
-
-            <h1 className="text-[22px] sm:text-3xl md:text-[34px] font-bold leading-tight mb-10 drop-shadow-md">
-              {t('Технологии, которые', 'Жаңа технологиялар')} <br />
-              {t('помогают', 'көмектесетін')} <br />
-              {t('менять мир', 'әлемді өзгертуге')}
-            </h1>
-            
-            <div className="flex flex-col sm:flex-row gap-5">
-              <Link href="/auth" className="bg-orange-500 hover:bg-orange-600 text-white px-10 py-3.5 rounded-full font-bold text-center transition-all shadow-lg hover:shadow-orange-500/40 hover:-translate-y-0.5">
-                {t('Стать волонтёром', 'Волонтер болу')}
-              </Link>
-              <Link href="/directions" className="border-2 border-white/70 hover:bg-white/10 text-white px-10 py-3.5 rounded-full font-bold text-center transition-all">
-                {t('Узнать больше', 'Көбірек білу')}
-              </Link>
+              <h1 className="text-[22px] font-bold leading-tight mb-8 drop-shadow-lg">
+                {t('Технологии, которые', 'Жаңа технологиялар')} <br />
+                {t('помогают', 'көмектесетін')} <br />
+                {t('менять мир', 'әлемді өзгертуге')}
+              </h1>
+              <div className="flex flex-col gap-4">
+                <Link href="/auth" className="bg-orange-500 hover:bg-orange-600 text-white px-10 py-3.5 rounded-full font-bold text-center transition-all shadow-lg hover:shadow-orange-500/40">
+                  {t('Стать волонтёром', 'Волонтер болу')}
+                </Link>
+                <Link href="/directions" className="border-2 border-white/70 hover:bg-white/20 text-white px-10 py-3.5 rounded-full font-bold text-center transition-all backdrop-blur-sm">
+                  {t('Узнать больше', 'Көбірек білу')}
+                </Link>
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="absolute left-0 right-0 bottom-[-1px] pointer-events-none w-full leading-none z-20">
-          <svg viewBox="0 0 1440 320" preserveAspectRatio="none" className="w-full h-[80px] md:h-[180px]" fill="#f8fafc">
-            <path d="M0,160 C400,320 900,0 1440,120 L1440,320 L0,320 Z"></path>
-          </svg>
+        {/* === DESKTOP LAYOUT === */}
+        <div className="hidden sm:block relative min-h-[80vh]">
+          <div className="absolute inset-0 z-0">
+            <img 
+              src="/IMG_9879.JPG"
+              alt="Volunteers Background"
+              className="w-full h-full object-cover object-[center_30%]"
+            />
+            <div className="absolute inset-0 bg-gradient-to-r from-[#0d4f52]/90 via-[#1a7f84]/70 to-[#1a7f84]/30" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#0d4f52]/80 via-transparent to-[#0d4f52]/40" />
+          </div>
+          <div className="relative z-20 max-w-7xl mx-auto px-6 lg:px-12 pt-32 pb-56 flex items-center min-h-[80vh]">
+            <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-3xl p-8 md:p-12 max-w-lg shadow-2xl shadow-black/20">
+              <div className="mb-8">
+                <div className="flex items-center gap-2">
+                  <span className="font-display font-light text-5xl tracking-tight">IT</span>
+                  <span className="font-display font-bold text-5xl tracking-tight">ERTIS</span>
+                  <Sparkles className="text-yellow-400 fill-yellow-400 drop-shadow-md -mt-2 w-9 h-9 shrink-0" />
+                </div>
+                <div className="font-display font-bold text-3xl tracking-[0.25em] pl-1 mt-[-4px]">VOLUNTEER</div>
+              </div>
+              <h1 className="text-3xl md:text-[34px] font-bold leading-tight mb-8 drop-shadow-lg">
+                {t('Технологии, которые', 'Жаңа технологиялар')} <br />
+                {t('помогают', 'көмектесетін')} <br />
+                {t('менять мир', 'әлемді өзгертуге')}
+              </h1>
+              <div className="flex flex-row gap-4">
+                <Link href="/auth" className="bg-orange-500 hover:bg-orange-600 text-white px-10 py-3.5 rounded-full font-bold text-center transition-all shadow-lg hover:shadow-orange-500/40 hover:-translate-y-0.5">
+                  {t('Стать волонтёром', 'Волонтер болу')}
+                </Link>
+                <Link href="/directions" className="border-2 border-white/70 hover:bg-white/20 text-white px-10 py-3.5 rounded-full font-bold text-center transition-all backdrop-blur-sm">
+                  {t('Узнать больше', 'Көбірек білу')}
+                </Link>
+              </div>
+            </div>
+          </div>
+          {/* Wave separator */}
+          <div className="absolute left-0 right-0 bottom-[-1px] pointer-events-none w-full leading-none z-20">
+            <svg viewBox="0 0 1440 320" preserveAspectRatio="none" className="w-full h-[80px] md:h-[180px]" fill="#f8fafc">
+              <path d="M0,160 C400,320 900,0 1440,120 L1440,320 L0,320 Z"></path>
+            </svg>
+          </div>
         </div>
       </section>
 

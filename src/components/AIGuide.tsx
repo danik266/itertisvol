@@ -283,7 +283,10 @@ export default function AIGuide() {
           MOBILE CHAT — на весь экран
       ════════════════════════════════════════════ */}
       {isOpen && (
-        <div className="fixed inset-0 z-[60] flex flex-col md:hidden bg-white">
+        <div
+          className="fixed inset-0 z-[60] flex flex-col md:hidden bg-white"
+          style={{ height: '100dvh' }}
+        >
           <div className="bg-[#1a7f84] text-white px-4 py-4 flex justify-between items-center shrink-0 shadow-md">
             <div className="flex items-center gap-3">
               <div className="bg-white/20 p-2 rounded-full"><Bot size={22} /></div>
@@ -301,7 +304,7 @@ export default function AIGuide() {
             </div>
           </div>
 
-          <div className="flex-1 px-4 py-4 overflow-y-auto bg-slate-50 flex flex-col gap-3">
+          <div className="flex-1 px-4 py-4 overflow-y-auto bg-slate-50 flex flex-col gap-3 min-h-0">
             {messages.map((msg, idx) => (
               <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div className={`max-w-[80%] p-3 text-sm leading-relaxed shadow-sm ${msg.role === 'user'
@@ -324,13 +327,13 @@ export default function AIGuide() {
             <div ref={messagesEndRef} />
           </div>
 
-          <form onSubmit={handleSubmit} className="px-3 py-3 bg-white border-t border-slate-100 shrink-0 flex gap-2">
+          <form onSubmit={handleSubmit} className="px-3 py-3 bg-white border-t border-slate-100 shrink-0 flex gap-2 items-center">
             <input
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder={lang === 'kz' ? 'Сұрағыңызды жазыңыз...' : 'Напишите ваш вопрос...'}
-              className="flex-1 bg-slate-50 border border-slate-200 rounded-full px-4 py-2.5 text-sm focus:outline-none focus:border-[#1a7f84] focus:ring-1 focus:ring-[#1a7f84] transition-all"
+              className="flex-1 min-w-0 bg-slate-50 border border-slate-200 rounded-full px-4 py-2.5 text-sm focus:outline-none focus:border-[#1a7f84] focus:ring-1 focus:ring-[#1a7f84] transition-all"
             />
             <button
               type="submit"
@@ -347,30 +350,23 @@ export default function AIGuide() {
           MOBILE TRIGGER — персонаж большой внизу справа
       ════════════════════════════════════════════ */}
       {!isOpen && (
-        <div className="fixed bottom-[-1.5rem] left-[-2.5rem] z-50 md:hidden flex flex-col items-start">
+        <div className="fixed bottom-[-1rem] left-0 z-50 md:hidden flex flex-col items-start">
           {/* Пузырь */}
           {bubbleText && (
-            <div className="mb-2 ml-20 bg-white text-slate-800 text-xs font-semibold py-2 px-3 rounded-2xl shadow-xl border border-slate-100 max-w-[180px] text-center relative z-20">
+            <div className="mb-2 ml-4 bg-white text-slate-800 text-xs font-semibold py-2 px-3 rounded-2xl shadow-xl border border-slate-100 max-w-[180px] text-center relative z-20">
               {bubbleText}
-              <div className="absolute -bottom-2 left-6 w-4 h-4 bg-white border-b border-r border-slate-100 transform rotate-45" />
+              <div className="absolute -bottom-2 left-10 w-4 h-4 bg-white border-b border-r border-slate-100 transform rotate-45" />
             </div>
           )}
 
           {/* Персонаж + иконка звука */}
           <div className="relative cursor-pointer" onClick={() => setIsOpen(true)}>
-            {/* Иконка звука поверх персонажа */}
-            <button
-              onClick={toggleMute}
-              className="absolute top-4 right-[1.5rem] bg-white shadow-lg rounded-full p-2 text-[#1a7f84] border border-slate-100 z-30"
-            >
-              {MuteIcon18}
-            </button>
 
             <div className="animate-float-mobile">
               <img
                 src="/images/guide_hello.png"
                 alt="AI Guide"
-                className="w-[160px] h-auto object-contain"
+                className="w-[130px] h-auto object-contain"
                 style={{ mixBlendMode: 'multiply' }}
               />
             </div>
@@ -465,7 +461,7 @@ export default function AIGuide() {
             <img
               src={isOpen ? '/images/guide_character.png' : '/images/guide_hello.png'}
               alt="AI Guide"
-              className="w-[18rem] lg:w-[22rem] h-auto max-h-[90vh] object-contain group-hover:scale-105 transition-transform origin-bottom"
+              className="w-[14rem] lg:w-[17rem] h-auto max-h-[90vh] object-contain group-hover:scale-105 transition-transform origin-bottom"
               style={{ mixBlendMode: 'multiply' }}
             />
           </div>

@@ -131,9 +131,6 @@ export default function OrganizationsPage() {
                   <div className="flex items-center gap-2 text-sm text-gray-500">
                     <Mail size={14} />{org.email}
                   </div>
-                  <div className="flex items-center gap-2 text-sm text-gray-500">
-                    <Users size={14} />{org.volunteers} {t('волонтёров', 'волонтер')}
-                  </div>
                 </div>
 
                 <div className="flex items-center gap-2 mb-4">

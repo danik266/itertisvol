@@ -135,10 +135,6 @@ export default function OrganizationDetailPage() {
                   <a href={`mailto:${org.email}`} className="hover:text-teal-600 transition-colors">{org.email}</a>
                 </div>
               )}
-              <div className="flex items-center gap-3 text-sm text-gray-600">
-                <Users size={18} className="shrink-0 text-gray-400" />
-                <span>{org.volunteers} {t('волонтёров', 'волонтер')}</span>
-              </div>
             </div>
 
             {/* Socials */}
