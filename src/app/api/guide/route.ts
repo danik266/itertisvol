@@ -71,11 +71,24 @@ export async function POST(req: Request) {
       } catch {
         // не JSON — оставляем как есть
       }
+      let availableModels: string[] = [];
+      try {
+        const mRes = await fetch('https://api.groq.com/openai/v1/models', {
+          headers: { Authorization: `Bearer ${apiKey}` },
+        });
+        if (mRes.ok) {
+          const mData = await mRes.json();
+          availableModels = (mData.data || []).map((m: any) => m.id);
+        }
+      } catch {
+        // список моделей не критичен
+      }
       return NextResponse.json(
         {
           reply: language === 'kz' ? 'Кешіріңіз, қате кетті. Қайта көріңіз.' : 'Извините, произошла ошибка. Попробуйте еще раз.',
           groqStatus: res.status,
           groqError: detail,
+          availableModels,
         },
         { status: 500 }
       );
