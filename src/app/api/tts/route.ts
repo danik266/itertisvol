@@ -15,11 +15,24 @@ if (process.env.GOOGLE_TTS_API_KEY) {
 
 export async function POST(req: NextRequest) {
   try {
-    const { text, language } = await req.json();
+    const { text: rawText, language } = await req.json();
     const lang = language === 'kz' ? 'kz' : 'ru';
-    
-    if (!text) {
+
+    if (!rawText) {
       return NextResponse.json({ error: 'No text provided' }, { status: 400 });
+    }
+
+    // Синтезаторы проговаривают эмодзи и markdown вслух ("подмигивающее лицо",
+    // "звёздочка"), поэтому убираем их из озвучки — в чате текст остаётся как есть.
+    const text = String(rawText)
+      .replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE00}-\u{FE0F}\u{1F1E6}-\u{1F1FF}\u{2190}-\u{21FF}\u{2B00}-\u{2BFF}\u{20D0}-\u{20FF}\u{2122}\u{2139}\u{3030}\u{303D}]/gu, ' ')
+      .replace(/[*_`#~]/g, '')
+      .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+      .replace(/\s{2,}/g, ' ')
+      .trim();
+
+    if (!text) {
+      return NextResponse.json({ error: 'Nothing to speak' }, { status: 400 });
     }
 
     // 0. Official ISSAI Mangisoz TTS (The Absolute Gold Standard for Kazakh)
