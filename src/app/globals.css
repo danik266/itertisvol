@@ -97,3 +97,13 @@ h1, h2, h3, h4 {
   background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 40'%3E%3Cpath fill='%2300BFA6' d='M0,20 C360,40 1080,0 1440,20 L1440,0 L0,0 Z'/%3E%3C/svg%3E") no-repeat center;
   background-size: cover;
 }
+
+/* Горизонтальные ленты (фильтры, табы, галереи): прокрутка остаётся,
+   но системная полоса не занимает место и не портит вид. */
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}

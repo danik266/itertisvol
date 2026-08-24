@@ -167,7 +167,7 @@ export default function AdminPage() {
   };
 
   const renderTabs = () => (
-    <div className="flex gap-4 mb-8 border-b border-gray-200 pb-4 overflow-x-auto">
+    <div className="flex gap-4 mb-8 border-b border-gray-200 pb-4 overflow-x-auto scrollbar-none">
       <button 
         onClick={() => setActiveTab('users')} 
         className={`flex items-center gap-2 px-4 py-2 font-bold rounded-xl transition-colors whitespace-nowrap ${activeTab === 'users' ? 'bg-teal-50 text-teal-700' : 'text-gray-500 hover:bg-gray-50'}`}
