@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                model: 'llama-3.1-8b-instant',
+                model: 'openai/gpt-oss-20b',
                 messages: [
                     {
                         role: 'system',
@@ -39,16 +39,7 @@ export async function POST(req: NextRequest) {
         if (!res.ok) {
             const errorText = await res.text();
             console.error('Groq API Error:', errorText);
-            let detail = errorText.slice(0, 300);
-            try {
-                detail = JSON.parse(errorText)?.error?.message ?? detail;
-            } catch {
-                // не JSON — оставляем как есть
-            }
-            return NextResponse.json(
-                { error: 'Ассистент временно недоступен', groqStatus: res.status, groqError: detail },
-                { status: 502 }
-            );
+            return NextResponse.json({ error: 'Ассистент временно недоступен' }, { status: 502 });
         }
 
         const data = await res.json();

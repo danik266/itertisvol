@@ -55,7 +55,7 @@ export async function POST(req: Request) {
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'llama-3.3-70b-versatile', // Reliable, versatile model with good multilingual support
+        model: 'openai/gpt-oss-120b', // модели llama-3.x сняты Groq с обслуживания
         messages,
         temperature: 0.7,
         max_tokens: 300,
@@ -65,31 +65,8 @@ export async function POST(req: Request) {
     if (!res.ok) {
       const errorText = await res.text();
       console.error('Groq API Error:', errorText);
-      let detail = errorText.slice(0, 300);
-      try {
-        detail = JSON.parse(errorText)?.error?.message ?? detail;
-      } catch {
-        // не JSON — оставляем как есть
-      }
-      let availableModels: string[] = [];
-      try {
-        const mRes = await fetch('https://api.groq.com/openai/v1/models', {
-          headers: { Authorization: `Bearer ${apiKey}` },
-        });
-        if (mRes.ok) {
-          const mData = await mRes.json();
-          availableModels = (mData.data || []).map((m: any) => m.id);
-        }
-      } catch {
-        // список моделей не критичен
-      }
       return NextResponse.json(
-        {
-          reply: language === 'kz' ? 'Кешіріңіз, қате кетті. Қайта көріңіз.' : 'Извините, произошла ошибка. Попробуйте еще раз.',
-          groqStatus: res.status,
-          groqError: detail,
-          availableModels,
-        },
+        { reply: language === 'kz' ? 'Кешіріңіз, қате кетті. Қайта көріңіз.' : 'Извините, произошла ошибка. Попробуйте еще раз.' },
         { status: 500 }
       );
     }
