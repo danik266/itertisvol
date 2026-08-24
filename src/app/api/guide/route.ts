@@ -65,8 +65,18 @@ export async function POST(req: Request) {
     if (!res.ok) {
       const errorText = await res.text();
       console.error('Groq API Error:', errorText);
+      let detail = errorText.slice(0, 300);
+      try {
+        detail = JSON.parse(errorText)?.error?.message ?? detail;
+      } catch {
+        // не JSON — оставляем как есть
+      }
       return NextResponse.json(
-        { reply: language === 'kz' ? 'Кешіріңіз, қате кетті. Қайта көріңіз.' : 'Извините, произошла ошибка. Попробуйте еще раз.' }, 
+        {
+          reply: language === 'kz' ? 'Кешіріңіз, қате кетті. Қайта көріңіз.' : 'Извините, произошла ошибка. Попробуйте еще раз.',
+          groqStatus: res.status,
+          groqError: detail,
+        },
         { status: 500 }
       );
     }
