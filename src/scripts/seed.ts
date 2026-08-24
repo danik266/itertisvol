@@ -278,7 +278,13 @@ async function seed() {
   const existingAdmin = await UserModel.findOne({ email: adminEmail });
   if (!existingAdmin) {
     console.log('👤 Creating admin user...');
-    const hashed = await bcrypt.hash('admin123', 10);
+    // Пароль берётся из окружения: хардкод попадал в публичный репозиторий,
+    // и админку мог открыть любой, кто читал исходники.
+    const adminPassword = process.env.SEED_ADMIN_PASSWORD;
+    if (!adminPassword || adminPassword.length < 8) {
+      throw new Error('Set SEED_ADMIN_PASSWORD (минимум 8 символов) перед сидированием админа');
+    }
+    const hashed = await bcrypt.hash(adminPassword, 10);
     await UserModel.create({
       firstName: 'Главный',
       lastName: 'Администратор',
@@ -286,7 +292,7 @@ async function seed() {
       password: hashed,
       role: 'admin'
     });
-    console.log('✅ Admin user created: admin@itvolunteer.kz / admin123');
+    console.log(`✅ Admin user created: ${adminEmail} (пароль из SEED_ADMIN_PASSWORD)`);
   }
 
   // Clear existing
