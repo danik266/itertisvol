@@ -3,6 +3,10 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function POST(req: NextRequest) {
     const { message } = await req.json();
 
+    if (!message || typeof message !== 'string' || !message.trim()) {
+        return NextResponse.json({ error: 'Пустой запрос' }, { status: 400 });
+    }
+
     const apiKey = process.env.GROQ_API_KEY;
     if (!apiKey) {
         return NextResponse.json({ error: 'GROQ_API_KEY not set' }, { status: 500 });
@@ -32,8 +36,17 @@ export async function POST(req: NextRequest) {
             }),
         });
 
+        if (!res.ok) {
+            const errorText = await res.text();
+            console.error('Groq API Error:', errorText);
+            return NextResponse.json({ error: 'Ассистент временно недоступен' }, { status: 502 });
+        }
+
         const data = await res.json();
-        const reply = data.choices?.[0]?.message?.content || 'Извините, не смог ответить.';
+        const reply = data.choices?.[0]?.message?.content;
+        if (!reply) {
+            return NextResponse.json({ error: 'Пустой ответ от Groq' }, { status: 502 });
+        }
         return NextResponse.json({ reply });
     } catch {
         return NextResponse.json({ error: 'Failed to fetch Groq' }, { status: 500 });

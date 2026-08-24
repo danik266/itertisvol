@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 
-const MONGODB_URI = process.env.MONGODB_URI!;
+const MONGODB_URI = process.env.MONGODB_URI;
 
 if (!MONGODB_URI) {
   throw new Error('Please define the MONGODB_URI environment variable inside .env.local');
@@ -26,9 +26,23 @@ export default async function dbConnect() {
   if (cached.conn) return cached.conn;
 
   if (!cached.promise) {
-    cached.promise = mongoose.connect(MONGODB_URI).then((m) => m);
+    cached.promise = mongoose
+      .connect(MONGODB_URI!, {
+        // По умолчанию mongoose ждёт 30 секунд — слишком долго держать
+        // запрос, если кластер недоступен.
+        serverSelectionTimeoutMS: 10000,
+      })
+      .then((m) => m);
   }
 
-  cached.conn = await cached.promise;
+  try {
+    cached.conn = await cached.promise;
+  } catch (err) {
+    // Drop the rejected promise so the next request retries instead of
+    // replaying the same failure until the process restarts.
+    cached.promise = null;
+    throw err;
+  }
+
   return cached.conn;
 }

@@ -1,8 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  images: {
-    domains: ['images.unsplash.com'],
-  },
+  // Проект рендерит картинки обычным <img>, а не next/image,
+  // поэтому images.domains здесь не нужен.
 }
 
 module.exports = nextConfig

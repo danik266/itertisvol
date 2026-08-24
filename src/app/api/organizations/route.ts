@@ -28,6 +28,6 @@ export async function GET() {
     });
   } catch (error: unknown) {
     console.error('Orgs error:', error);
-    return NextResponse.json({ organizations: [] }, { status: 500 });
+    return NextResponse.json({ error: 'Не удалось загрузить организации' }, { status: 500 });
   }
 }

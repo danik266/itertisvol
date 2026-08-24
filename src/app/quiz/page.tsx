@@ -55,8 +55,11 @@ export default function QuizPage() {
   const total = Object.values(result?.scores || {}).reduce((a, b) => a + b, 0) || 1;
 
   if (result) {
-    const topDir = directions.find(d => d.id === result.top)!;
-    const sorted = Object.entries(result.scores).sort((a, b) => b[1] - a[1]);
+    const topDir = directions.find(d => d.id === result.top);
+    // Направления приходят из БД: показываем только те, что реально загрузились.
+    const sorted = Object.entries(result.scores)
+      .filter(([key]) => directions.some(d => d.id === key))
+      .sort((a, b) => b[1] - a[1]);
 
     const descMap: Record<string, { ru: string; kz: string }> = {
       eco: {
@@ -97,12 +100,12 @@ export default function QuizPage() {
       <div className="min-h-screen bg-gradient-to-br from-teal-50 to-orange-50 py-12 px-4">
         <div className="max-w-2xl mx-auto">
           <div className="text-center mb-8">
-            {topDir.image ? (
+            {topDir?.image ? (
               <div className="w-24 h-24 mx-auto rounded-3xl overflow-hidden bg-white shadow-sm mb-4">
-                <img src={topDir.image} className="w-full h-full object-cover" />
+                <img alt="" src={topDir.image!} className="w-full h-full object-cover" />
               </div>
             ) : (
-              <div className="text-6xl mb-4">{topDir.icon}</div>
+              <div className="text-6xl mb-4">{topDir?.icon || '🎯'}</div>
             )}
             <div className="inline-flex items-center gap-2 bg-green-100 text-green-600 font-bold px-4 py-2 rounded-full mb-4">
               <CheckCircle size={18} /> {t('Результат готов!', 'Нәтиже дайын!')}
@@ -110,8 +113,8 @@ export default function QuizPage() {
             <h1 className="font-display text-3xl font-bold mb-2">
               {t('Тебе подходит:', 'Саған сәйкес:')}
             </h1>
-            <h2 className="font-display text-2xl font-bold" style={{ color: topDir.color }}>
-              {t(topDir.labelRu + ' волонтёрство', topDir.labelKz + ' волонтерлік')}
+            <h2 className="font-display text-2xl font-bold" style={{ color: topDir?.color }}>
+              {topDir ? t(topDir.labelRu + ' волонтёрство', topDir.labelKz + ' волонтерлік') : result.top}
             </h2>
             <p className="text-gray-600 mt-4 leading-relaxed">
               {t(descMap[result.top]?.ru || '', descMap[result.top]?.kz || '')}
@@ -123,13 +126,14 @@ export default function QuizPage() {
             <h3 className="font-bold mb-4">{t('Совпадение по направлениям:', 'Бағыттар бойынша сәйкестік:')}</h3>
             <div className="space-y-3">
               {sorted.map(([key, val]) => {
-                const dir = directions.find(d => d.id === key)!;
+                const dir = directions.find(d => d.id === key);
+                if (!dir) return null;
                 const pct = Math.round((val / total) * 100);
                 return (
                   <div key={key} className="flex items-center gap-3">
                     {dir.image ? (
                       <div className="w-8 h-8 rounded-lg overflow-hidden shrink-0 bg-white shadow-sm">
-                        <img src={dir.image} className="w-full h-full object-cover" />
+                        <img alt="" src={dir.image} className="w-full h-full object-cover" />
                       </div>
                     ) : (
                       <span className="text-xl">{dir.icon}</span>

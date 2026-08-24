@@ -34,8 +34,5 @@ const OrganizationSchema = new Schema<IOrganization>({
   volunteers: { type: Number, default: 0 },
 });
 
-if (mongoose.models.Organization) {
-  delete mongoose.models.Organization;
-}
-
-export default mongoose.model<IOrganization>('Organization', OrganizationSchema);
+export default (mongoose.models.Organization as Model<IOrganization>) ||
+  mongoose.model<IOrganization>('Organization', OrganizationSchema);

@@ -26,12 +26,16 @@ export default function NewsPage() {
   const router = useRouter();
   const [events, setEvents] = useState<EventData[]>([]);
   const [loadingEvents, setLoadingEvents] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
     fetch('/api/events')
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error('Failed to load events');
+        return res.json();
+      })
       .then(data => setEvents(data.events || []))
-      .catch(() => {})
+      .catch(() => setLoadError(true))
       .finally(() => setLoadingEvents(false));
   }, []);
 
@@ -53,6 +57,21 @@ export default function NewsPage() {
           <div className="text-center py-20 text-gray-400">
             <div className="text-5xl mb-4 animate-bounce">📰</div>
             <p className="text-lg font-medium">{t('Загрузка новостей...', 'Жаңалықтар жүктелуде...')}</p>
+          </div>
+        ) : loadError ? (
+          <div className="text-center py-20 text-gray-500">
+            <div className="text-5xl mb-4">⚠️</div>
+            <p className="text-lg font-medium mb-1">
+              {t('Не удалось загрузить новости', 'Жаңалықтарды жүктеу мүмкін болмады')}
+            </p>
+            <p className="text-sm text-gray-400">
+              {t('Проверьте соединение и попробуйте обновить страницу', 'Байланысты тексеріп, бетті жаңартып көріңіз')}
+            </p>
+          </div>
+        ) : events.length === 0 ? (
+          <div className="text-center py-20 text-gray-400">
+            <div className="text-5xl mb-4">📭</div>
+            <p className="text-lg font-medium">{t('Пока нет новостей', 'Әзірге жаңалықтар жоқ')}</p>
           </div>
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">

@@ -1,7 +1,12 @@
+import './loadEnv';
 import mongoose from 'mongoose';
 
 // MongoDB connection
-const MONGODB_URI = 'mongodb+srv://ertvol:wHr5XH6q8@cluster0.zcg4hf7.mongodb.net/ertis_volunteer?appName=Cluster0';
+const MONGODB_URI = process.env.MONGODB_URI;
+
+if (!MONGODB_URI) {
+  throw new Error('Please define the MONGODB_URI environment variable inside .env.local');
+}
 
 // Data from src/data/index.ts
 const organizations = [
@@ -257,7 +262,7 @@ const events = [
 
 async function seed() {
   console.log('🌱 Connecting to MongoDB...');
-  await mongoose.connect(MONGODB_URI);
+  await mongoose.connect(MONGODB_URI!);
   console.log('✅ Connected!');
 
   const bcrypt = require('bcryptjs');

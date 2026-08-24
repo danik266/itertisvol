@@ -29,6 +29,6 @@ export async function GET() {
     });
   } catch (error: unknown) {
     console.error('Events error:', error);
-    return NextResponse.json({ events: [] }, { status: 500 });
+    return NextResponse.json({ error: 'Не удалось загрузить мероприятия' }, { status: 500 });
   }
 }

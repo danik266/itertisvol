@@ -61,25 +61,35 @@ export default function AdminPage() {
     const payload = { ...editingOrg, volunteers: Number(editingOrg.volunteers) || 0 };
     
     try {
-      await fetch('/api/admin/organizations', {
+      const res = await fetch('/api/admin/organizations', {
         method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        alert('Ошибка при сохранении: ' + (data.error || res.status));
+        return;
+      }
       setEditingOrg(null);
       fetchData();
     } catch (err) {
-      alert('Ошибка при сохранении');
+      alert('Ошибка сети при сохранении');
     }
   };
 
   const deleteOrg = async (id: string) => {
     if (!confirm('Вы уверены, что хотите удалить эту организацию?')) return;
     try {
-      await fetch(`/api/admin/organizations?id=${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/admin/organizations?id=${id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        alert('Ошибка при удалении организации: ' + (data.error || res.status));
+        return;
+      }
       fetchData();
     } catch (err) {
-      alert('Ошибка при удалении');
+      alert('Ошибка сети при удалении');
     }
   };
 
@@ -108,10 +118,15 @@ export default function AdminPage() {
   const deleteEvent = async (id: string) => {
     if (!confirm('Вы уверены, что хотите удалить это мероприятие?')) return;
     try {
-      await fetch(`/api/admin/events?id=${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/admin/events?id=${id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        alert('Ошибка при удалении мероприятия: ' + (data.error || res.status));
+        return;
+      }
       fetchData();
     } catch (err) {
-      alert('Ошибка при удалении');
+      alert('Ошибка сети при удалении');
     }
   };
 
@@ -139,10 +154,15 @@ export default function AdminPage() {
   const deleteDir = async (id: string) => {
     if (!confirm('Вы уверены, что хотите удалить направление? (Это может нарушить связь с существующими организациями)')) return;
     try {
-      await fetch(`/api/admin/directions?id=${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/admin/directions?id=${id}`, { method: 'DELETE' });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        alert('Ошибка при удалении направления: ' + (data.error || res.status));
+        return;
+      }
       fetchData();
     } catch (err) {
-      alert('Ошибка при удалении');
+      alert('Ошибка сети при удалении');
     }
   };
 
@@ -296,7 +316,7 @@ export default function AdminPage() {
                         <div>
                           <div className="flex gap-2 items-center mb-1">
                             {ev.image ? (
-                              <img src={ev.image} className="w-10 h-10 rounded shadow-sm object-cover shrink-0" />
+                              <img alt="" src={ev.image} className="w-10 h-10 rounded shadow-sm object-cover shrink-0" />
                             ) : (
                               <span className="text-2xl shrink-0">{ev.emoji}</span>
                             )}
@@ -339,7 +359,7 @@ export default function AdminPage() {
                       <div key={d._id} className="border border-gray-100 rounded-2xl p-4 bg-white shadow-sm flex flex-col justify-between" style={{ borderTop: `4px solid ${d.color}` }}>
                         <div>
                           {d.image ? (
-                            <img src={d.image} className="w-10 h-10 rounded shadow-sm object-cover mb-2" />
+                            <img alt="" src={d.image} className="w-10 h-10 rounded shadow-sm object-cover mb-2" />
                           ) : (
                             <p className="text-2xl mb-2">{d.icon}</p>
                           )}
@@ -458,7 +478,7 @@ export default function AdminPage() {
                     {/* Image Thumbnails */}
                     {(editingEvent.images || (editingEvent.image ? [editingEvent.image] : [])).map((img: string, idx: number) => (
                       <div key={idx} className="w-24 h-24 rounded-2xl overflow-hidden border border-gray-100 relative group shadow-sm bg-gray-50">
-                        <img src={img} className="w-full h-full object-cover" />
+                        <img alt="" src={img} className="w-full h-full object-cover" />
                         <button 
                           type="button" 
                           onClick={() => {
@@ -561,7 +581,7 @@ export default function AdminPage() {
                   <div className="flex gap-4 items-center">
                     {editingDir.image ? (
                       <div className="w-20 h-20 rounded-xl overflow-hidden border border-gray-200 relative flex-shrink-0 bg-gray-50">
-                        <img src={editingDir.image} className="w-full h-full object-cover" />
+                        <img alt="" src={editingDir.image} className="w-full h-full object-cover" />
                         <button type="button" onClick={() => setEditingDir({...editingDir, image: ''})} className="absolute top-1 right-1 bg-white rounded-full p-1 text-red-500 shadow hover:bg-red-50">✕</button>
                       </div>
                     ) : (

@@ -1,7 +1,11 @@
 import { SignJWT, jwtVerify } from 'jose';
 import { cookies } from 'next/headers';
 
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'fallback_secret');
+if (!process.env.JWT_SECRET) {
+  throw new Error('Please define the JWT_SECRET environment variable inside .env.local');
+}
+
+const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET);
 const COOKIE_NAME = 'ertis_token';
 
 export async function signToken(userId: string): Promise<string> {

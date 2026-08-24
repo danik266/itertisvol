@@ -1,3 +1,4 @@
+import './loadEnv';
 import dbConnect from '../lib/mongodb';
 import Direction from '../models/Direction';
 import { directions } from '../data';

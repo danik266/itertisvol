@@ -3,6 +3,8 @@ import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
 import { getUserIdFromCookie } from '@/lib/jwt';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const userId = await getUserIdFromCookie();

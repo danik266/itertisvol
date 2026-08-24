@@ -129,7 +129,7 @@ export default function DirectionsPage() {
                 <div className="flex items-center gap-6 mb-8">
                   {d.image ? (
                     <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0 bg-white">
-                      <img src={d.image} className="w-full h-full object-cover" />
+                      <img alt="" src={d.image} className="w-full h-full object-cover" />
                     </div>
                   ) : (
                     <div className="text-6xl shrink-0">{d.icon}</div>

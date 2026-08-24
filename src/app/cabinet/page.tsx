@@ -140,7 +140,7 @@ export default function CabinetPage() {
                 <div className="flex items-center gap-3 p-3 rounded-xl mb-3" style={{ background: userDir.bg }}>
                   {userDir.image ? (
                     <div className="w-8 h-8 rounded-lg overflow-hidden shrink-0 bg-white shadow-sm">
-                      <img src={userDir.image} className="w-full h-full object-cover" />
+                      <img alt="" src={userDir.image} className="w-full h-full object-cover" />
                     </div>
                   ) : (
                     <span className="text-3xl">{userDir.icon}</span>
@@ -159,14 +159,15 @@ export default function CabinetPage() {
                       .sort((a, b) => b[1] - a[1])
                       .slice(0, 3)
                       .map(([key, val]) => {
-                        const dir = directions.find(d => d.id === key)!;
+                        const dir = directions.find(d => d.id === key);
+                        if (!dir) return null;
                         const total = Object.values(user.scores!).reduce((a, b) => a + b, 0) || 1;
                         const pct = Math.round((val / total) * 100);
                         return (
                           <div key={key}>
                             <div className="flex justify-between text-xs mb-1">
                               <span className="text-gray-500 flex items-center gap-1">
-                                {dir.image ? <img src={dir.image} className="w-4 h-4 rounded-sm object-cover" /> : dir.icon} {t(dir.labelRu, dir.labelKz)}
+                                {dir.image ? <img alt="" src={dir.image} className="w-4 h-4 rounded-sm object-cover" /> : dir.icon} {t(dir.labelRu, dir.labelKz)}
                               </span>
                               <span className="font-bold" style={{ color: dir.color }}>{pct}%</span>
                             </div>
@@ -220,6 +221,53 @@ export default function CabinetPage() {
         {/* RIGHT: Applications + Events */}
         <div className="md:col-span-2 space-y-6">
 
+          {/* Applications to organizations */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            <h2 className="font-bold text-gray-700 mb-4 flex items-center gap-2">
+              🏢 {t('Мои заявки', 'Менің өтінімдерім')}
+              {appliedOrgs.length > 0 && (
+                <span className="ml-auto text-xs font-bold bg-teal-100 text-teal-600 px-2 py-1 rounded-full">
+                  {appliedOrgs.length}
+                </span>
+              )}
+            </h2>
+            {appliedOrgs.length > 0 ? (
+              <div className="space-y-3">
+                {appliedOrgs.map(org => {
+                  const dir = directions.find(d => d.id === org.direction);
+                  return (
+                    <Link
+                      key={org.id}
+                      href={`/organizations/${org.id}`}
+                      className="flex items-center gap-4 p-4 rounded-xl border border-gray-100 hover:border-teal-200 hover:bg-teal-50/40 transition-colors"
+                    >
+                      <div
+                        className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 text-xl"
+                        style={{ background: dir?.bg || '#f3f4f6' }}
+                      >
+                        {dir?.icon || '🏢'}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-bold text-sm truncate">{org.name}</div>
+                        <div className="text-xs text-gray-400">{org.city}</div>
+                      </div>
+                      <span className="text-xs font-bold bg-green-100 text-green-600 px-3 py-1 rounded-full flex-shrink-0">
+                        ✓ {t('Заявка подана', 'Өтінім берілді')}
+                      </span>
+                    </Link>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-400">
+                <div className="text-4xl mb-2">📋</div>
+                <p className="text-sm">{t('Вы ещё не подали ни одной заявки', 'Сіз әлі бірде-бір өтінім бермедіңіз')}</p>
+                <Link href="/organizations" className="mt-3 inline-block text-teal-500 font-bold text-sm hover:text-teal-600">
+                  {t('Найти организацию →', 'Ұйым табу →')}
+                </Link>
+              </div>
+            )}
+          </div>
 
           {/* Registered events */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">

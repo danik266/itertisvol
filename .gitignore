@@ -37,3 +37,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# scratch / local artifacts
+api_resp.json
+seed_out.txt

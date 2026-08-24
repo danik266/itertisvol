@@ -61,39 +61,8 @@ export default function AIGuide() {
     if (typeof window === 'undefined') return;
     if (mutedRef.current) return;
 
-    const voice = currentLang === 'kz' ? 'kk-KZ-DauletNeural' : 'ru-RU-DmitryNeural';
-    console.log(`TTS: Initiating ${voice} for: "${text.substring(0, 30)}..."`);
-
-    // 1. DIRECT Neural TTS via stable public proxy (Bypasses server blocks/422/501)
-    try {
-      // kuku.lu is an extremely stable, high-availability Edge TTS relay
-      const directUrl = `https://tts.kuku.lu/edge?voice=${voice}&text=${encodeURIComponent(text)}`;
-      const res = await fetch(directUrl);
-      if (res.ok) {
-        const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-        
-        if (audioRef.current) {
-          audioRef.current.pause();
-          audioRef.current.src = "";
-        }
-
-        const audio = new Audio(url);
-        audioRef.current = audio;
-        audio.playbackRate = 0.98;
-        
-        audio.play().then(() => console.log(`✓ Direct Neural (${voice}) played`))
-        .catch(e => {
-          console.warn("Direct play failed, trying backend...", e);
-          tryBackendSpeak(text, currentLang);
-        });
-        return;
-      }
-    } catch (err) {
-      console.warn('Direct proxy failed, trying backend...', err);
-    }
-
-    // 2. Try Backend TTS (API)
+    // Голос синтезируется на бэкенде (/api/tts), с локальным браузерным
+    // синтезом как запасным вариантом.
     tryBackendSpeak(text, currentLang);
   }, []);
 

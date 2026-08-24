@@ -34,7 +34,5 @@ const EventSchema = new Schema<IEvent>({
   contentKz: { type: String, default: '' },
 });
 
-if (mongoose.models.Event) {
-  delete mongoose.models.Event;
-}
-export default mongoose.model<IEvent>('Event', EventSchema);
+export default (mongoose.models.Event as Model<IEvent>) ||
+  mongoose.model<IEvent>('Event', EventSchema);

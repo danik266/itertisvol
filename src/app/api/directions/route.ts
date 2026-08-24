@@ -25,6 +25,6 @@ export async function GET() {
     return NextResponse.json({ directions: mappedDirs });
   } catch (error: unknown) {
     console.error('Directions error:', error);
-    return NextResponse.json({ directions: [] }, { status: 500 });
+    return NextResponse.json({ error: 'Не удалось загрузить направления' }, { status: 500 });
   }
 }

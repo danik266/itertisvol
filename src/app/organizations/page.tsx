@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useLang } from '@/lib/LangContext';
 import { useAuth } from '@/lib/AuthContext';
 import { useData } from '@/lib/DataContext';
-import { Phone, Mail, Instagram, Facebook, Users, Filter, CheckCircle } from 'lucide-react';
+import { Phone, Mail, Instagram, Facebook, Filter } from 'lucide-react';
 import type { Direction } from '@/data';
 import Link from 'next/link';
 
@@ -23,29 +23,24 @@ interface OrgData {
 
 export default function OrganizationsPage() {
   const { t } = useLang();
-  const { user, updateUser } = useAuth();
   const { directions } = useData();
   const [filter, setFilter] = useState<any>('all');
   const [organizations, setOrganizations] = useState<OrgData[]>([]);
   const [loadingOrgs, setLoadingOrgs] = useState(true);
-  const [localApplied, setLocalApplied] = useState<number[]>([]);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
     fetch('/api/organizations')
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) throw new Error('Failed to load organizations');
+        return res.json();
+      })
       .then(data => setOrganizations(data.organizations || []))
-      .catch(() => {})
+      .catch(() => setLoadError(true))
       .finally(() => setLoadingOrgs(false));
   }, []);
 
   const filtered = filter === 'all' ? organizations : organizations.filter(o => o.direction === filter);
-
-  const apply = async (id: number) => {
-    if (user) {
-      setLocalApplied(prev => [...prev, id]); // Оптимистичное обновление
-      await updateUser({ appliedOrgs: [...(user.appliedOrgs || []), id] });
-    }
-  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -79,7 +74,7 @@ export default function OrganizationsPage() {
               style={filter === d.id ? { background: d.color } : { background: d.bg, color: d.color }}
             >
               {d.image ? (
-                <img src={d.image} className="w-5 h-5 rounded-sm object-cover shrink-0" />
+                <img alt="" src={d.image} className="w-5 h-5 rounded-sm object-cover shrink-0" />
               ) : (
                 <span>{d.icon}</span>
               )}
@@ -96,9 +91,18 @@ export default function OrganizationsPage() {
             <div className="text-4xl mb-2">⏳</div>
             <p>{t('Загрузка...', 'Жүктелуде...')}</p>
           </div>
+        ) : loadError ? (
+          <div className="col-span-full text-center py-16 text-gray-500">
+            <div className="text-4xl mb-2">⚠️</div>
+            <p className="font-medium">{t('Не удалось загрузить организации', 'Ұйымдарды жүктеу мүмкін болмады')}</p>
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="col-span-full text-center py-16 text-gray-400">
+            <div className="text-4xl mb-2">🏢</div>
+            <p>{t('Организаций пока нет', 'Әзірге ұйымдар жоқ')}</p>
+          </div>
         ) : filtered.map(org => {
-          const dir = directions.find(d => d.id === org.direction)!;
-          const applied = user?.appliedOrgs?.includes(org.id) || localApplied.includes(org.id);
+          const dir = directions.find(d => d.id === org.direction);
           return (
             <div key={org.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden card-hover">
               {/* Color header */}
@@ -109,7 +113,7 @@ export default function OrganizationsPage() {
                   </div>
                 ) : dir?.image ? (
                   <div className="w-10 h-10 rounded-xl overflow-hidden shrink-0 bg-white shadow-sm">
-                    <img src={dir?.image} className="w-full h-full object-cover" />
+                    <img alt="" src={dir?.image} className="w-full h-full object-cover" />
                   </div>
                 ) : (
                   <span className="text-3xl">{dir?.icon}</span>
@@ -134,12 +138,12 @@ export default function OrganizationsPage() {
                 </div>
 
                 <div className="flex items-center gap-2 mb-4">
-                  {org.social.instagram && (
+                  {org.social?.instagram && (
                     <a href={org.social.instagram} target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-lg bg-pink-50 flex items-center justify-center text-pink-500 hover:bg-pink-100 transition-colors">
                       <Instagram size={14} />
                     </a>
                   )}
-                  {org.social.facebook && (
+                  {org.social?.facebook && (
                     <a href={org.social.facebook} target="_blank" rel="noopener noreferrer" className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-500 hover:bg-blue-100 transition-colors">
                       <Facebook size={14} />
                     </a>

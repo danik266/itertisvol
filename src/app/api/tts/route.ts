@@ -102,20 +102,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 3. Reliable Proxy Fallback for Edge TTS
-    try {
-      const voice = lang === 'kz' ? 'kk-KZ-DauletNeural' : 'ru-RU-DmitryNeural';
-      const proxyUrl = `https://tts.cypro.ru/api/tts?text=${encodeURIComponent(text)}&voice=${voice}`;
-      console.log('TTS: Trying Community Proxy...');
-      const pRes = await fetch(proxyUrl, { signal: AbortSignal.timeout(5000) });
-      if (pRes.ok) {
-        console.log('Success: Edge TTS Proxy');
-        const buffer = await pRes.arrayBuffer();
-        return new NextResponse(buffer, { headers: { 'Content-Type': 'audio/mpeg' } });
-      }
-    } catch (e) {}
-
-    // 4. Final Failsafe: Google Translate (Free Public API)
+    // 3. Final Failsafe: Google Translate (Free Public API)
     try {
       const gLang = lang === 'kz' ? 'kk' : 'ru';
       console.log('TTS: Final Failsafe (Google Translate Public)...');
