@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLang } from '@/lib/LangContext';
 import { useAuth } from '@/lib/AuthContext';
@@ -28,6 +28,11 @@ export default function AuthPage() {
   const { register, login, error, clearError, setError } = useAuth();
   const { directions } = useData();
   const router = useRouter();
+
+  // Верхнюю границу даты рождения ставим только после монтирования: страница
+  // отдаётся статикой, и вшитая на сборке дата разошлась бы с текущей.
+  const [today, setToday] = useState('');
+  useEffect(() => setToday(new Date().toISOString().slice(0, 10)), []);
 
   const [mode, setMode] = useState<Mode>('register');
   const [step, setStep] = useState(0);
@@ -203,7 +208,16 @@ export default function AuthPage() {
               {isLegal ? (
                 <Field icon={<Briefcase size={16} />} name="activityType" placeholder={t('Вид деятельности', 'Қызмет түрі')} value={form.activityType} onChange={set} />
               ) : (
-                <Field icon={<Calendar size={16} />} name="dob" type="date" placeholder={t('Дата рождения', 'Туған күні')} value={form.dob} onChange={set} />
+                <Field
+                  icon={<Calendar size={16} />}
+                  name="dob"
+                  type="date"
+                  label={t('Дата рождения', 'Туған күні')}
+                  placeholder={t('Дата рождения', 'Туған күні')}
+                  value={form.dob}
+                  onChange={set}
+                  max={today || undefined}
+                />
               )}
               <div className="grid gap-3 sm:grid-cols-2">
                 <Field icon={<MapPin size={16} />} name="city" placeholder={t('Город', 'Қала')} value={form.city} onChange={set} />
@@ -378,22 +392,31 @@ function TypeButton({
 }
 
 function Field({
-  icon, name, placeholder, type = 'text', value, onChange,
+  icon, name, placeholder, type = 'text', value, onChange, label, max,
 }: {
   icon: React.ReactNode; name: string; placeholder: string; type?: string;
   value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  /** Подпись сверху: нужна там, где placeholder не показывается (поля даты). */
+  label?: string;
+  max?: string;
 }) {
   return (
-    <div className="relative">
-      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">{icon}</span>
-      <input
-        name={name}
-        type={type}
-        placeholder={placeholder}
-        value={value}
-        onChange={onChange}
-        className="w-full rounded-xl border border-slate-200 py-3 pl-10 pr-3 text-sm outline-none transition-colors focus:border-teal-400 focus:ring-2 focus:ring-teal-100"
-      />
+    <div>
+      {label && <div className="mb-1 ml-1 text-xs font-medium text-slate-500">{label}</div>}
+      <div className="relative">
+        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">{icon}</span>
+        <input
+          name={name}
+          type={type}
+          placeholder={placeholder}
+          value={value}
+          onChange={onChange}
+          max={max}
+          // appearance-none и min-w-0 обязательны: иначе Safari на телефоне
+          // рисует поле даты своим стилем и растягивает его за край экрана.
+          className="w-full min-w-0 appearance-none rounded-xl border border-slate-200 bg-white py-3 pl-10 pr-3 text-sm text-slate-800 outline-none transition-colors focus:border-teal-400 focus:ring-2 focus:ring-teal-100"
+        />
+      </div>
     </div>
   );
 }

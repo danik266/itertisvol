@@ -38,49 +38,65 @@ export default function PostFeed({
   const [month, setMonth] = useState('all');
   const [openFor, setOpenFor] = useState<Post | null>(null);
   const newestAt = useRef<string | null>(null);
+  // Чтобы одна и та же публикация не попала в ленту дважды.
+  const knownIds = useRef<Set<string>>(new Set());
+
+  /** Общие условия отбора: у опроса они должны совпадать с основной загрузкой. */
+  const baseParams = useCallback(() => {
+    const params = new URLSearchParams({ type });
+    if (direction !== 'all') params.set('direction', direction);
+    if (showMonths && month !== 'all') params.set('month', month);
+    return params;
+  }, [type, direction, month, showMonths]);
 
   const load = useCallback(async () => {
     try {
-      const params = new URLSearchParams({ type, limit: '60' });
-      if (direction !== 'all') params.set('direction', direction);
-      if (showMonths && month !== 'all') params.set('month', month);
+      const params = baseParams();
+      params.set('limit', '60');
       const res = await fetch(`/api/posts?${params}`);
       if (!res.ok) throw new Error('failed');
       const data = await res.json();
-      setPosts(data.posts || []);
-      newestAt.current = data.posts?.[0]?.createdAt ?? null;
+      const list: Post[] = data.posts || [];
+      setPosts(list);
+      newestAt.current = list[0]?.createdAt ?? null;
+      knownIds.current = new Set(list.map(p => p._id));
       setFailed(false);
     } catch {
       setFailed(true);
     } finally {
       setLoading(false);
     }
-  }, [type, direction, month, showMonths]);
+  }, [baseParams]);
 
   useEffect(() => { load(); }, [load]);
 
   // Живая лента: подтягиваем только появившееся после последней записи.
   useEffect(() => {
     const id = setInterval(async () => {
-      if (document.hidden || !newestAt.current) return;
+      if (document.hidden) return;
       try {
-        const params = new URLSearchParams({ type, since: newestAt.current });
+        // Пока лента пуста, отсчитывать не от чего — запрашиваем всё подряд,
+        // иначе самая первая публикация не появилась бы без перезагрузки.
+        const params = baseParams();
+        if (newestAt.current) params.set('since', newestAt.current);
+        else params.set('limit', '60');
+
         const res = await fetch(`/api/posts?${params}`);
         if (!res.ok) return;
         const data = await res.json();
-        const fresh: Post[] = data.posts || [];
+        const incoming: Post[] = data.posts || [];
+        const fresh = incoming.filter(p => !knownIds.current.has(p._id));
         if (!fresh.length) return;
+
         newestAt.current = fresh[0].createdAt;
-        setPosts(prev => {
-          const known = new Set(prev.map(p => p._id));
-          return [...fresh.filter(p => !known.has(p._id)), ...prev];
-        });
+        fresh.forEach(p => knownIds.current.add(p._id));
+        setPosts(prev => [...fresh, ...prev]);
       } catch {
         // тихо ждём следующего цикла
       }
     }, POLL_MS);
     return () => clearInterval(id);
-  }, [type]);
+  }, [baseParams]);
 
   const months = useMemo(() => {
     const now = new Date();

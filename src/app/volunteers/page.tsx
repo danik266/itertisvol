@@ -29,6 +29,8 @@ export default function VolunteersPage() {
   const [freshIds, setFreshIds] = useState<string[]>([]);
 
   const newestAt = useRef<string | null>(null);
+  // Чтобы один и тот же волонтёр не попал в ленту дважды.
+  const knownIds = useRef<Set<string>>(new Set());
 
   const load = useCallback(async () => {
     try {
@@ -39,6 +41,7 @@ export default function VolunteersPage() {
       setVolunteers(list);
       setTotal(data.total || list.length);
       newestAt.current = list[0]?.createdAt ?? null;
+      knownIds.current = new Set(list.map(v => v._id));
       setFailed(false);
     } catch {
       setFailed(true);
@@ -54,16 +57,25 @@ export default function VolunteersPage() {
   // Лента в реальном времени: опрашиваем только новые записи.
   useEffect(() => {
     const id = setInterval(async () => {
-      if (document.hidden || !newestAt.current) return;
+      if (document.hidden) return;
       try {
-        const res = await fetch(`/api/volunteers?since=${encodeURIComponent(newestAt.current)}`);
+        // Пока в каталоге пусто, точки отсчёта нет — тогда запрашиваем список
+        // целиком, иначе самый первый зарегистрировавшийся так и не появился бы.
+        const res = await fetch(
+          newestAt.current
+            ? `/api/volunteers?since=${encodeURIComponent(newestAt.current)}`
+            : '/api/volunteers?limit=120'
+        );
         if (!res.ok) return;
         const data = await res.json();
-        const fresh: Volunteer[] = data.volunteers || [];
+        const incoming: Volunteer[] = data.volunteers || [];
+        const fresh = incoming.filter(v => !knownIds.current.has(v._id));
+        if (typeof data.total === 'number') setTotal(data.total);
         if (!fresh.length) return;
+
         newestAt.current = fresh[0].createdAt;
+        fresh.forEach(v => knownIds.current.add(v._id));
         setVolunteers(prev => [...fresh, ...prev]);
-        setTotal(prev => prev + fresh.length);
         setFreshIds(fresh.map(v => v._id));
         setTimeout(() => setFreshIds([]), 4000);
       } catch {
