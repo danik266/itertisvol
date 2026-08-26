@@ -4,6 +4,7 @@ import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
 import { signToken, setAuthCookie } from '@/lib/jwt';
 import { serializeUser } from '@/lib/serializeUser';
+import { moderateProfile } from '@/lib/moderation';
 
 const SOCIAL_KEYS = ['instagram', 'telegram', 'whatsapp', 'facebook', 'website'] as const;
 /** Аватар приходит как data URL, сжатый на клиенте. Ограничиваем ~300 КБ. */
@@ -33,6 +34,15 @@ export async function POST(req: Request) {
     }
     if (isVolunteer && (!Array.isArray(directions) || directions.length === 0)) {
       return NextResponse.json({ error: 'Выберите хотя бы одно направление' }, { status: 400 });
+    }
+
+    // Анкета попадает в общий каталог, поэтому проверяем её так же строго,
+    // как публикации: имя и описание видят все посетители.
+    const clean = await moderateProfile({
+      firstName, lastName, orgName, activityType, city, address, bio,
+    });
+    if (!clean.ok) {
+      return NextResponse.json({ error: clean.reason }, { status: 422 });
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

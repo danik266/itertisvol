@@ -4,6 +4,7 @@ import Post, { PostType, IMedia } from '@/models/Post';
 import User from '@/models/User';
 import { getUserIdFromCookie } from '@/lib/jwt';
 import { moderateText } from '@/lib/moderation';
+import { hasProfanity } from '@/lib/profanity';
 import { notifyAllVolunteers } from '@/lib/notify';
 
 export const dynamic = 'force-dynamic';
@@ -85,9 +86,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Файлы слишком большие' }, { status: 400 });
     }
 
+    // Место проведения тоже видно всем, поэтому проверяем его вместе с текстом.
     const verdict = await moderateText(String(text || ''));
     if (!verdict.ok) {
       return NextResponse.json({ error: verdict.reason }, { status: 422 });
+    }
+    if (hasProfanity(String(location || ''))) {
+      return NextResponse.json({ error: 'Недопустимое слово в месте проведения' }, { status: 422 });
     }
 
     const post = await Post.create({

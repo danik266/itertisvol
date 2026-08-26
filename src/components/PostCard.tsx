@@ -4,6 +4,7 @@ import { useLang } from '@/lib/LangContext';
 import { useAuth } from '@/lib/AuthContext';
 import type { DirectionData } from '@/lib/DataContext';
 import { Heart, MessageCircle, MapPin, CalendarDays, Check, Trash2, AlertTriangle } from 'lucide-react';
+import MediaGallery from '@/components/MediaGallery';
 
 export type PostType = 'experience' | 'need' | 'announcement';
 
@@ -140,30 +141,7 @@ export default function PostCard({
         )}
       </div>
 
-      {post.media?.length > 0 && (
-        <div className={`grid gap-1 ${post.media.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
-          {post.media.slice(0, 4).map((m, i) =>
-            m.type === 'video' ? (
-              <video
-                key={i}
-                src={m.url}
-                controls
-                playsInline
-                preload="metadata"
-                className={`w-full bg-black object-cover ${post.media.length === 1 ? 'max-h-96' : 'h-40'}`}
-              />
-            ) : (
-              <img
-                key={i}
-                src={m.url}
-                alt=""
-                loading="lazy"
-                className={`w-full object-cover ${post.media.length === 1 ? 'max-h-96' : 'h-40'}`}
-              />
-            )
-          )}
-        </div>
-      )}
+      {post.media?.length > 0 && <MediaGallery media={post.media} />}
 
       <footer className="flex flex-wrap items-center gap-1 border-t border-slate-100 px-2 py-2">
         <Action active={liked} onClick={() => react('like')} disabled={!user}

@@ -54,6 +54,13 @@ export default function VolunteersPage() {
     load();
   }, [load]);
 
+  // Отметки о показанных держим в согласии со списком: иначе запись, попавшая
+  // в него в обход загрузки, вернулась бы следующим опросом ещё раз.
+  useEffect(() => {
+    knownIds.current = new Set(volunteers.map(v => v._id));
+    if (volunteers[0]) newestAt.current = volunteers[0].createdAt;
+  }, [volunteers]);
+
   // Лента в реальном времени: опрашиваем только новые записи.
   useEffect(() => {
     const id = setInterval(async () => {

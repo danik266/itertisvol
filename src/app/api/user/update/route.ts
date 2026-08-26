@@ -3,6 +3,7 @@ import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
 import { serializeUser } from '@/lib/serializeUser';
 import { getUserIdFromCookie } from '@/lib/jwt';
+import { moderateProfile } from '@/lib/moderation';
 
 export async function PATCH(req: Request) {
   try {
@@ -39,6 +40,21 @@ export async function PATCH(req: Request) {
       if (body[key] !== undefined) {
         updates[key] = body[key];
       }
+    }
+
+    // Правка профиля проходит ту же проверку, что и регистрация: иначе
+    // достаточно было бы зарегистрироваться прилично, а потом переименоваться.
+    const clean = await moderateProfile({
+      firstName: updates.firstName as string | undefined,
+      lastName: updates.lastName as string | undefined,
+      orgName: updates.orgName as string | undefined,
+      activityType: updates.activityType as string | undefined,
+      city: updates.city as string | undefined,
+      address: updates.address as string | undefined,
+      bio: updates.bio as string | undefined,
+    });
+    if (!clean.ok) {
+      return NextResponse.json({ error: clean.reason }, { status: 422 });
     }
 
     const user = await User.findByIdAndUpdate(userId, updates, { new: true }).select('-password');

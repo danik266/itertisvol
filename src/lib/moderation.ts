@@ -6,57 +6,11 @@
  *    не блокируется: первый уровень уже отработал.
  */
 
+import { hasProfanity } from '@/lib/profanity';
+
 export interface ModerationResult {
   ok: boolean;
   reason: string;
-}
-
-// Явный мат: ищем как подстроку в слитном тексте, чтобы ловить «х у й» и «xyй».
-const PROFANITY_ROOTS = [
-  'хуй', 'хуе', 'хуя', 'пизд', 'ебан', 'ебат', 'ебал', 'ебуч', 'еблан', 'ебуч',
-  'бляд', 'блят', 'мудак', 'мудил', 'гандон', 'долбоеб', 'уебок', 'уебищ',
-  'пидор', 'пидар', 'залуп', 'шлюх', 'потаскух', 'ублюдок', 'котак', 'амкос',
-];
-
-// Слова, которые встречаются внутри обычных («сука» в «Сукачёв»),
-// поэтому сверяем их только целиком.
-const PROFANITY_WORDS = [
-  'сука', 'суки', 'суке', 'сукой', 'сучка', 'гнида', 'тварь', 'дебил',
-  'даун', 'манда', 'сикт', 'сiкт',
-];
-
-/** Похожие латинские буквы приводим к кириллице, чтобы «xyй» тоже ловился. */
-const HOMOGLYPHS: Record<string, string> = {
-  a: 'а', b: 'в', c: 'с', e: 'е', h: 'н', k: 'к', m: 'м',
-  o: 'о', p: 'р', t: 'т', x: 'х', y: 'у', u: 'у', i: 'и', 3: 'з', 0: 'о', 4: 'ч',
-};
-
-function mapChars(text: string): string {
-  return text
-    .toLowerCase()
-    .split('')
-    .map(ch => HOMOGLYPHS[ch] ?? ch)
-    .join('');
-}
-
-/** Растянутые буквы схлопываем полностью: «пиииизда» -> «пизда». */
-function squeeze(text: string): string {
-  return text.replace(/(.)\1+/g, '$1');
-}
-
-export function hasProfanity(text: string): boolean {
-  const mapped = mapChars(text);
-
-  // 1) слитный текст без разделителей — ловит разбивку пробелами и точками
-  const glued = squeeze(mapped.replace(/[^a-zа-яёіңғүұқөһ]+/gi, ''));
-  if (PROFANITY_ROOTS.some(root => glued.includes(root))) return true;
-
-  // 2) отдельные слова — для омонимичных корней
-  const words = mapped.split(/[^a-zа-яёіңғүұқөһ]+/i).filter(Boolean);
-  return words.some(word => {
-    const w = squeeze(word);
-    return PROFANITY_WORDS.some(bad => w === bad || w === squeeze(bad));
-  });
 }
 
 const SAFEGUARD_PROMPT = `Ты модератор волонтёрской платформы. Оцени текст пользователя.
@@ -107,5 +61,41 @@ export async function moderateText(text: string): Promise<ModerationResult> {
 
   const viaModel = await checkWithGroq(trimmed);
   // Groq недоступен — доверяем локальному фильтру, не блокируем публикацию.
+  return viaModel ?? { ok: true, reason: '' };
+}
+
+/** Человекочитаемые названия полей — попадают в текст ошибки. */
+const FIELD_LABELS: Record<string, string> = {
+  firstName: 'имени',
+  lastName: 'фамилии',
+  orgName: 'названии организации',
+  activityType: 'виде деятельности',
+  city: 'городе',
+  address: 'адресе',
+  bio: 'описании',
+  text: 'тексте',
+  location: 'месте проведения',
+};
+
+/**
+ * Проверка анкеты. Словарь применяем ко всем полям — это мгновенно, а модель
+ * зовём один раз и только для связного текста: гонять её по имени и городу
+ * значило бы задерживать регистрацию впустую.
+ */
+export async function moderateProfile(
+  fields: Record<string, string | undefined>
+): Promise<ModerationResult> {
+  for (const [name, value] of Object.entries(fields)) {
+    const trimmed = (value || '').trim();
+    if (trimmed && hasProfanity(trimmed)) {
+      const where = FIELD_LABELS[name] || 'анкете';
+      return { ok: false, reason: `Недопустимое слово в ${where}` };
+    }
+  }
+
+  const prose = (fields.bio || '').trim();
+  if (prose.length < 20) return { ok: true, reason: '' };
+
+  const viaModel = await checkWithGroq(prose);
   return viaModel ?? { ok: true, reason: '' };
 }

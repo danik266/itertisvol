@@ -70,6 +70,14 @@ export default function PostFeed({
 
   useEffect(() => { load(); }, [load]);
 
+  // Список — единственный источник правды о том, что уже показано. Держим
+  // отметки в согласии с ним, иначе только что созданная публикация вернётся
+  // следующим опросом и покажется второй раз.
+  useEffect(() => {
+    knownIds.current = new Set(posts.map(p => p._id));
+    if (posts[0]) newestAt.current = posts[0].createdAt;
+  }, [posts]);
+
   // Живая лента: подтягиваем только появившееся после последней записи.
   useEffect(() => {
     const id = setInterval(async () => {
