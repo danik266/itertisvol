@@ -142,10 +142,26 @@ export default function PostCard({
 
       {post.media?.length > 0 && (
         <div className={`grid gap-1 ${post.media.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
-          {post.media.slice(0, 4).map((m, i) => (
-            <img key={i} src={m.url} alt=""
-                 className={`w-full object-cover ${post.media.length === 1 ? 'max-h-96' : 'h-40'}`} />
-          ))}
+          {post.media.slice(0, 4).map((m, i) =>
+            m.type === 'video' ? (
+              <video
+                key={i}
+                src={m.url}
+                controls
+                playsInline
+                preload="metadata"
+                className={`w-full bg-black object-cover ${post.media.length === 1 ? 'max-h-96' : 'h-40'}`}
+              />
+            ) : (
+              <img
+                key={i}
+                src={m.url}
+                alt=""
+                loading="lazy"
+                className={`w-full object-cover ${post.media.length === 1 ? 'max-h-96' : 'h-40'}`}
+              />
+            )
+          )}
         </div>
       )}
 

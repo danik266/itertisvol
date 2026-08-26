@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useLang } from '@/lib/LangContext';
 import { useAuth } from '@/lib/AuthContext';
 import { useData } from '@/lib/DataContext';
-import { compressImage, ACCEPTED_IMAGE_TYPES } from '@/lib/image';
+import { uploadMedia, ACCEPTED_MEDIA } from '@/lib/uploadMedia';
 import type { PostType } from '@/components/PostCard';
 import { ImagePlus, X, AlertCircle, Send, CalendarDays, MapPin } from 'lucide-react';
 
@@ -29,6 +29,7 @@ export default function PostComposer({
   const [isUrgent, setIsUrgent] = useState(false);
   const [allowAttend, setAllowAttend] = useState(type !== 'experience');
   const [busy, setBusy] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -51,15 +52,19 @@ export default function PostComposer({
   const addFiles = async (files: FileList | null) => {
     if (!files?.length) return;
     setError(null);
+    setUploading(true);
     const room = MAX_MEDIA - media.length;
-    const picked = Array.from(files).slice(0, room);
-    for (const file of picked) {
-      try {
-        const url = await compressImage(file, 1080, 0.75);
-        setMedia(m => [...m, { url, type: 'image' }]);
-      } catch {
-        setError(t('Не удалось обработать файл', 'Файлды өңдеу мүмкін болмады'));
+    try {
+      for (const file of Array.from(files).slice(0, room)) {
+        try {
+          const item = await uploadMedia(file);
+          setMedia(m => [...m, item]);
+        } catch (e) {
+          setError(e instanceof Error ? e.message : t('Не удалось загрузить файл', 'Файлды жүктеу мүмкін болмады'));
+        }
       }
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -113,7 +118,11 @@ export default function PostComposer({
         <div className="mt-3 flex flex-wrap gap-2">
           {media.map((m, i) => (
             <div key={i} className="relative">
-              <img src={m.url} alt="" className="h-20 w-20 rounded-xl object-cover" />
+              {m.type === 'video' ? (
+                <video src={m.url} className="h-20 w-20 rounded-xl object-cover" muted />
+              ) : (
+                <img src={m.url} alt="" className="h-20 w-20 rounded-xl object-cover" />
+              )}
               <button
                 onClick={() => setMedia(list => list.filter((_, idx) => idx !== i))}
                 className="absolute -right-1.5 -top-1.5 rounded-full bg-slate-900 p-1 text-white"
@@ -186,23 +195,24 @@ export default function PostComposer({
       <div className="mt-4 flex items-center justify-between gap-3">
         <button
           onClick={() => fileRef.current?.click()}
-          disabled={media.length >= MAX_MEDIA}
+          disabled={media.length >= MAX_MEDIA || uploading}
           className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-slate-500 transition-colors hover:bg-slate-100 disabled:opacity-40"
         >
           <ImagePlus size={16} />
-          {t('Фото', 'Фото')} {media.length > 0 && `${media.length}/${MAX_MEDIA}`}
+          {uploading ? t('Загрузка...', 'Жүктелуде...') : t('Фото или видео', 'Фото не бейне')}
+          {media.length > 0 && ` ${media.length}/${MAX_MEDIA}`}
         </button>
         <input
           ref={fileRef}
           type="file"
-          accept={ACCEPTED_IMAGE_TYPES}
+          accept={ACCEPTED_MEDIA}
           multiple
           onChange={e => addFiles(e.target.files)}
           className="hidden"
         />
         <button
           onClick={submit}
-          disabled={busy || (!text.trim() && media.length === 0)}
+          disabled={busy || uploading || (!text.trim() && media.length === 0)}
           className="inline-flex items-center gap-2 rounded-full bg-teal-600 px-5 py-2.5 text-sm font-bold text-white transition-colors hover:bg-teal-700 disabled:opacity-40"
         >
           <Send size={15} />
