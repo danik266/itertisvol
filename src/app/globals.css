@@ -107,3 +107,14 @@ h1, h2, h3, h4 {
 .scrollbar-none::-webkit-scrollbar {
   display: none;
 }
+
+/* Ни один блок не должен растягивать страницу вбок на телефоне. */
+html, body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* Крупные заголовки не должны рвать вёрстку на узких экранах. */
+h1, h2, h3 {
+  overflow-wrap: break-word;
+}

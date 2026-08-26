@@ -58,7 +58,7 @@ export default function Header() {
           <button
             onClick={toggleAccessible}
             title={t('Версия для слабовидящих', 'Нашар көретіндер нұсқасы')}
-            className={`p-2 rounded-lg transition-colors ${accessible ? 'bg-teal-100 text-teal-600' : 'text-gray-400 hover:text-teal-500'}`}
+            className={`hidden sm:block p-2 rounded-lg transition-colors ${accessible ? 'bg-teal-100 text-teal-600' : 'text-gray-400 hover:text-teal-500'}`}
           >
             <Eye size={18} />
           </button>
@@ -109,6 +109,14 @@ export default function Header() {
               {t(n.labelRu, n.labelKz)}
             </Link>
           ))}
+
+          <button
+            onClick={() => { toggleAccessible(); setOpen(false); }}
+            className="flex w-full items-center gap-2 border-t border-gray-100 pt-3 text-sm font-semibold text-gray-700"
+          >
+            <Eye size={16} />
+            {t('Версия для слабовидящих', 'Нашар көретіндер нұсқасы')}
+          </button>
         </div>
       )}
     </header>
