@@ -4,6 +4,7 @@ import Post, { PostType, IMedia } from '@/models/Post';
 import User from '@/models/User';
 import { getUserIdFromCookie } from '@/lib/jwt';
 import { moderateText } from '@/lib/moderation';
+import { notifyAllVolunteers } from '@/lib/notify';
 
 export const dynamic = 'force-dynamic';
 
@@ -100,6 +101,19 @@ export async function POST(req: NextRequest) {
       isUrgent: Boolean(isUrgent),
       allowAttend: Boolean(allowAttend),
     });
+
+    // Срочные просьбы о помощи рассылаем всем волонтёрам внутри сайта.
+    if (type === 'need' && post.isUrgent) {
+      await notifyAllVolunteers({
+        actor: userId,
+        post: post._id,
+        type: 'urgent',
+        text: post.location
+          ? `Срочно нужна помощь: ${post.location}`
+          : 'Срочно нужна помощь волонтёров',
+        link: '/needs',
+      });
+    }
 
     const populated = await Post.findById(post._id).populate('author', AUTHOR_FIELDS).lean();
     return NextResponse.json({ post: populated });

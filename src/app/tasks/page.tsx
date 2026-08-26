@@ -2,13 +2,13 @@
 import { useState } from 'react';
 import { useLang } from '@/lib/LangContext';
 import { useAuth } from '@/lib/AuthContext';
-import { Sparkles, Lock, RefreshCw, Download } from 'lucide-react';
+import { Sparkles, Lock, RefreshCw, Download, Palette, Shirt, PenLine, Lightbulb } from 'lucide-react';
 import Link from 'next/link';
 
 const generatorTypes = [
   {
     id: 'image',
-    emoji: '🎨',
+    Icon: Palette,
     labelRu: 'Генерация изображений',
     labelKz: 'Суреттерді генерациялау',
     descRu: 'Создай уникальное изображение для волонтёрского проекта',
@@ -20,7 +20,7 @@ const generatorTypes = [
   },
   {
     id: 'merch',
-    emoji: '👕',
+    Icon: Shirt,
     labelRu: 'Создание мерча',
     labelKz: 'Мерч жасау',
     descRu: 'Дизайн футболок и жилеток для команды',
@@ -32,7 +32,7 @@ const generatorTypes = [
   },
   {
     id: 'logo',
-    emoji: '✨',
+    Icon: Sparkles,
     labelRu: 'Генерация логотипов',
     labelKz: 'Логотиптерді генерациялау',
     descRu: 'Профессиональный логотип для волонтёрской организации',
@@ -44,7 +44,7 @@ const generatorTypes = [
   },
   {
     id: 'scenario',
-    emoji: '📝',
+    Icon: PenLine,
     labelRu: 'Написание сценариев',
     labelKz: 'Сценарийлер жазу',
     descRu: 'Готовый сценарий для мероприятия или акции',
@@ -196,7 +196,7 @@ export default function TasksPage() {
               }`}
               style={activeType === g.id ? { borderColor: g.color, background: g.bg } : {}}
             >
-              <div className="text-3xl mb-2">{g.emoji}</div>
+              <g.Icon size={26} className="mb-2" style={{ color: g.color }} />
               <div className="font-bold text-sm" style={activeType === g.id ? { color: g.color } : { color: '#374151' }}>
                 {t(g.labelRu, g.labelKz)}
               </div>
@@ -207,7 +207,7 @@ export default function TasksPage() {
         {/* Generator area */}
         <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-6 md:p-8">
           <div className="flex items-center gap-3 mb-2">
-            <div className="text-4xl">{activeGen.emoji}</div>
+            <activeGen.Icon size={34} style={{ color: activeGen.color }} />
             <div>
               <h2 className="font-display font-bold text-xl" style={{ color: activeGen.color }}>
                 {t(activeGen.labelRu, activeGen.labelKz)}
@@ -313,7 +313,7 @@ export default function TasksPage() {
                 disabled={!user}
                 className="text-left p-4 bg-white rounded-xl border border-gray-200 hover:border-teal-300 text-sm text-gray-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed hover:shadow-sm"
               >
-                💡 {t(ex.ru, ex.kz)}
+                <Lightbulb size={15} className="mr-2 inline-block text-amber-500" />{t(ex.ru, ex.kz)}
               </button>
             ))}
           </div>

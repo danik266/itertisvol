@@ -6,7 +6,7 @@ import { useLang } from '@/lib/LangContext';
 import { useAuth } from '@/lib/AuthContext';
 import { useData } from '@/lib/DataContext';
 import { quizQuestions } from '@/data';
-import { ChevronRight, ChevronLeft, CheckCircle } from 'lucide-react';
+import { ChevronRight, ChevronLeft, CheckCircle, Target } from 'lucide-react';
 
 type ScoreMap = Record<string, number>;
 
@@ -105,7 +105,7 @@ export default function QuizPage() {
                 <img alt="" src={topDir.image!} className="w-full h-full object-cover" />
               </div>
             ) : (
-              <div className="text-6xl mb-4">{topDir?.icon || '🎯'}</div>
+              <Target size={48} className="mx-auto mb-4 text-teal-500" />
             )}
             <div className="inline-flex items-center gap-2 bg-green-100 text-green-600 font-bold px-4 py-2 rounded-full mb-4">
               <CheckCircle size={18} /> {t('Результат готов!', 'Нәтиже дайын!')}

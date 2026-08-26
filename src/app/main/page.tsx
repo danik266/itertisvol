@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useLang } from '@/lib/LangContext';
 import { useData } from '@/lib/DataContext';
-import { Sparkles, Grid, Users, Heart, MonitorCheck, TreePine, Dog } from 'lucide-react';
+import { Sparkles, Grid, Users, Heart, MonitorCheck, TreePine, Dog, CalendarDays } from 'lucide-react';
 import AIGuide from '@/components/AIGuide';
 
 interface EventData {
@@ -83,11 +83,25 @@ export default function MainPage() {
                 </div>
                 <div className="font-display font-bold text-[20px] tracking-[0.25em] pl-0.5 mt-[-2px]">VOLUNTEER</div>
               </div>
-              <h1 className="text-[22px] font-bold leading-tight mb-8 drop-shadow-lg">
+              <div className="mb-5 inline-flex flex-wrap gap-2">
+                <span className="rounded-full bg-white/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider ring-1 ring-white/25">
+                  {t('Год цифровых технологий', 'Цифрлық технологиялар жылы')}
+                </span>
+                <span className="rounded-full bg-white/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider ring-1 ring-white/25">
+                  {t('Международный год волонтёрства', 'Халықаралық волонтерлік жылы')}
+                </span>
+              </div>
+              <h1 className="text-[22px] font-bold leading-tight mb-4 drop-shadow-lg">
                 {t('Технологии, которые', 'Жаңа технологиялар')} <br />
                 {t('помогают', 'көмектесетін')} <br />
                 {t('менять мир', 'әлемді өзгертуге')}
               </h1>
+              <p className="mb-8 text-[15px] leading-relaxed text-white/85">
+                {t(
+                  'Единая цифровая платформа, объединяющая волонтёрские организации Павлодарской области в одном пространстве.',
+                  'Павлодар облысының волонтерлік ұйымдарын бір кеңістікте біріктіретін біртұтас цифрлық платформа.'
+                )}
+              </p>
               <div className="flex flex-col gap-4">
                 <Link href="/auth" className="bg-orange-500 hover:bg-orange-600 text-white px-10 py-3.5 rounded-full font-bold text-center transition-all shadow-lg hover:shadow-orange-500/40">
                   {t('Стать волонтёром', 'Волонтер болу')}
@@ -121,11 +135,25 @@ export default function MainPage() {
                 </div>
                 <div className="font-display font-bold text-3xl tracking-[0.25em] pl-1 mt-[-4px]">VOLUNTEER</div>
               </div>
-              <h1 className="text-3xl md:text-[34px] font-bold leading-tight mb-8 drop-shadow-lg">
+              <div className="mb-5 inline-flex flex-wrap gap-2">
+                <span className="rounded-full bg-white/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider ring-1 ring-white/25">
+                  {t('Год цифровых технологий', 'Цифрлық технологиялар жылы')}
+                </span>
+                <span className="rounded-full bg-white/15 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider ring-1 ring-white/25">
+                  {t('Международный год волонтёрства', 'Халықаралық волонтерлік жылы')}
+                </span>
+              </div>
+              <h1 className="text-3xl md:text-[34px] font-bold leading-tight mb-4 drop-shadow-lg">
                 {t('Технологии, которые', 'Жаңа технологиялар')} <br />
                 {t('помогают', 'көмектесетін')} <br />
                 {t('менять мир', 'әлемді өзгертуге')}
               </h1>
+              <p className="mb-8 max-w-md text-base leading-relaxed text-white/85">
+                {t(
+                  'Единая цифровая платформа, объединяющая волонтёрские организации Павлодарской области в одном цифровом пространстве.',
+                  'Павлодар облысының волонтерлік ұйымдарын бір цифрлық кеңістікте біріктіретін біртұтас платформа.'
+                )}
+              </p>
               <div className="flex flex-row gap-4">
                 <Link href="/auth" className="bg-orange-500 hover:bg-orange-600 text-white px-10 py-3.5 rounded-full font-bold text-center transition-all shadow-lg hover:shadow-orange-500/40 hover:-translate-y-0.5">
                   {t('Стать волонтёром', 'Волонтер болу')}
@@ -282,7 +310,7 @@ export default function MainPage() {
                   {e.image ? (
                     <img src={e.image} alt={e.titleRu} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-6xl" style={{ backgroundColor: e.color || '#f1f5f9' }}>{e.emoji}</div>
+                    <div className="flex h-full w-full items-center justify-center" style={{ backgroundColor: e.color || '#f1f5f9' }}><CalendarDays size={40} className="text-white/70" /></div>
                   )}
                 </div>
                 <div className="p-6">

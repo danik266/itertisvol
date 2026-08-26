@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { getSiteContext } from '@/lib/siteContext';
 
 const SYSTEM_PROMPT = `You are a friendly, helpful AI Guide for IT ERTIS VOLUNTEER, presented as a character in Kazakh traditional style.
 You speak clearly, concisely, and encouragingly. Your goal is to guide visitors, answer their questions about volunteering, and promote the IT ERTIS VOLUNTEER platform.
@@ -30,7 +31,7 @@ Rules for your answers:
 - Be highly relevant to the site. 
 - If asked a general life question or something out of context, gently bring the topic back to IT ERTIS VOLUNTEER or answer briefly while maintaining your friendly persona.
 - ALWAYS respond in the language the user is speaking (Russian or Kazakh). If the user asks in Kazakh, reply in natural Kazakh. If in Russian, reply in Russian.
-- Use emojis occasionally to maintain a positive and modern vibe.
+- Do NOT use emojis: the interface is intentionally clean and typographic.
 - Reply in PLAIN TEXT only. The chat window does not render markdown, so never use **bold**, *italic*, headings, bullet syntax or numbered-list markup — write it as flowing sentences instead.`;
 
 export async function POST(req: Request) {
@@ -42,9 +43,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ reply: language === 'kz' ? 'Менимен байланысу үшін GROQ_API_KEY орнатылмаған.' : 'API ключ GROQ не настроен в .env.local.' });
     }
 
+    const siteContext = await getSiteContext();
+
     // Format messages for Groq LLM
     const messages = [
-      { role: 'system', content: SYSTEM_PROMPT },
+      { role: 'system', content: siteContext ? `${SYSTEM_PROMPT}\n\n${siteContext}` : SYSTEM_PROMPT },
       ...(history || []).map((m: any) => ({ role: m.role, content: m.content })),
       { role: 'user', content: message }
     ];

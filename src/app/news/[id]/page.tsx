@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useLang } from '@/lib/LangContext';
 import { useData } from '@/lib/DataContext';
-import { ArrowLeft, Calendar, MapPin, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Calendar, MapPin, ChevronLeft, ChevronRight, Newspaper } from 'lucide-react';
 
 export default function EventDetailPage() {
   const { id } = useParams();
@@ -139,11 +139,9 @@ export default function EventDetailPage() {
               )}
             </div>
           ) : (
-            evt.emoji && (
-              <div className="mb-10 flex justify-center py-12 bg-gray-50 rounded-3xl text-7xl border border-gray-100 border-dashed">
-                {evt.emoji}
-              </div>
-            )
+            <div className="mb-10 flex justify-center rounded-3xl border border-dashed border-slate-200 bg-slate-50 py-12">
+              <Newspaper size={44} className="text-slate-300" />
+            </div>
           )}
 
           <div className="prose prose-teal prose-lg max-w-none text-gray-700 leading-relaxed whitespace-pre-wrap">

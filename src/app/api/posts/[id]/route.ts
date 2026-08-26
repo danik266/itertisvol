@@ -4,8 +4,15 @@ import Post from '@/models/Post';
 import Comment from '@/models/Comment';
 import User from '@/models/User';
 import { getUserIdFromCookie } from '@/lib/jwt';
+import { notify } from '@/lib/notify';
 
 export const dynamic = 'force-dynamic';
+
+const FEED_LINKS: Record<string, string> = {
+  experience: '/experience',
+  need: '/needs',
+  announcement: '/announcements',
+};
 
 /** Лайк и отклик «я приду» — переключатели, поэтому один PATCH на оба действия. */
 export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
@@ -32,6 +39,20 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       { _id: post._id },
       already ? { $pull: { [field]: userId } } : { $addToSet: { [field]: userId } }
     );
+
+    // Уведомляем автора только когда действие включают, а не отменяют.
+    if (!already) {
+      await notify({
+        user: post.author,
+        actor: userId,
+        post: post._id,
+        type: field === 'attendees' ? 'attend' : 'like',
+        text: field === 'attendees'
+          ? 'Волонтёр откликнулся на вашу публикацию'
+          : 'Вашу публикацию отметили',
+        link: FEED_LINKS[post.type] || '/',
+      });
+    }
 
     const updated = await Post.findById(params.id).select('likes attendees').lean();
     return NextResponse.json({

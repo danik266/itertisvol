@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useLang } from '@/lib/LangContext';
 import { useAuth } from '@/lib/AuthContext';
 import { Menu, X, Eye, User, Sparkles } from 'lucide-react';
+import NotificationBell from '@/components/NotificationBell';
 
 export default function Header() {
   const { lang, setLang, t } = useLang();
@@ -73,6 +74,8 @@ export default function Header() {
               className={`text-xs font-bold px-2 py-1 rounded-md transition-all ${lang === 'kz' ? 'bg-white text-teal-600 shadow-sm' : 'text-gray-500'}`}
             >ҚЗ</button>
           </div>
+
+          <NotificationBell />
 
           {/* Auth */}
           {user ? (

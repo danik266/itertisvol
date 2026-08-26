@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useLang } from '@/lib/LangContext';
 import { useAuth } from '@/lib/AuthContext';
 import { useData } from '@/lib/DataContext';
-import { Calendar, MapPin, ArrowRight } from 'lucide-react';
+import { Calendar, MapPin, ArrowRight, Newspaper, AlertTriangle } from 'lucide-react';
 
 interface EventData {
   id: number;
@@ -55,12 +55,12 @@ export default function NewsPage() {
       <div className="max-w-7xl mx-auto px-4 py-12">
         {loadingEvents ? (
           <div className="text-center py-20 text-gray-400">
-            <div className="text-5xl mb-4 animate-bounce">📰</div>
+            <Newspaper size={36} className="mx-auto mb-4 animate-pulse text-slate-300" />
             <p className="text-lg font-medium">{t('Загрузка новостей...', 'Жаңалықтар жүктелуде...')}</p>
           </div>
         ) : loadError ? (
           <div className="text-center py-20 text-gray-500">
-            <div className="text-5xl mb-4">⚠️</div>
+            <AlertTriangle size={36} className="mx-auto mb-4 text-orange-400" />
             <p className="text-lg font-medium mb-1">
               {t('Не удалось загрузить новости', 'Жаңалықтарды жүктеу мүмкін болмады')}
             </p>
@@ -70,7 +70,7 @@ export default function NewsPage() {
           </div>
         ) : events.length === 0 ? (
           <div className="text-center py-20 text-gray-400">
-            <div className="text-5xl mb-4">📭</div>
+            <div className="text-5xl mb-4"></div>
             <p className="text-lg font-medium">{t('Пока нет новостей', 'Әзірге жаңалықтар жоқ')}</p>
           </div>
         ) : (
@@ -84,7 +84,7 @@ export default function NewsPage() {
                     {e.image ? (
                       <img src={e.image} alt="" className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" onError={(err) => { err.currentTarget.style.display = 'none'; }} />
                     ) : (
-                      <span className="group-hover:scale-110 transition-transform duration-500">{e.emoji}</span>
+                      <Newspaper size={40} className="text-slate-300 transition-transform duration-500 group-hover:scale-110" />
                     )}
                     
                     {/* Floating Direction Badge */}

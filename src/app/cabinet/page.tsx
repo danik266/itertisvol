@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useLang } from '@/lib/LangContext';
 import { useAuth } from '@/lib/AuthContext';
 import { useData } from '@/lib/DataContext';
-import { User, MapPin, Phone, Mail, LogOut, ClipboardList, Calendar, Zap, ChevronRight } from 'lucide-react';
+import { User, MapPin, Phone, Mail, LogOut, ClipboardList, Calendar, Zap, ChevronRight, Users, Megaphone, Sparkles, CalendarDays } from 'lucide-react';
 
 
 interface EventData {
@@ -182,16 +182,16 @@ export default function CabinetPage() {
             <h2 className="font-bold text-gray-700 mb-3">{t('Быстрые ссылки', 'Жылдам сілтемелер')}</h2>
             <div className="space-y-2">
               {[
-                { href: '/volunteers', ru: 'Волонтёры', kz: 'Волонтерлер', icon: '🤝' },
-                { href: '/news', ru: 'Мероприятия', kz: 'Іс-шаралар', icon: '📅' },
-                { href: '/tasks', ru: 'Генератор', kz: 'Генератор', icon: '⚡' },
+                { href: '/volunteers', ru: 'Волонтёры', kz: 'Волонтерлер', Icon: Users },
+                { href: '/announcements', ru: 'Объявления', kz: 'Хабарландырулар', Icon: Megaphone },
+                { href: '/tasks', ru: 'Генератор', kz: 'Генератор', Icon: Sparkles },
               ].map(l => (
                 <Link
                   key={l.href}
                   href={l.href}
                   className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition-colors text-sm font-semibold text-gray-600"
                 >
-                  <span>{l.icon}</span>
+                  <l.Icon size={17} className="text-slate-400" />
                   {t(l.ru, l.kz)}
                   <ChevronRight size={14} className="ml-auto text-gray-300" />
                 </Link>
@@ -206,7 +206,7 @@ export default function CabinetPage() {
           {/* Registered events */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
             <h2 className="font-bold text-gray-700 mb-4 flex items-center gap-2">
-              📅 {t('Мои мероприятия', 'Менің іс-шараларым')}
+              <CalendarDays size={17} className="text-slate-400" /> {t('Мои мероприятия', 'Менің іс-шараларым')}
               {appliedEvts.length > 0 && (
                 <span className="ml-auto text-xs font-bold bg-orange-100 text-orange-600 px-2 py-1 rounded-full">
                   {appliedEvts.length}
@@ -223,7 +223,7 @@ export default function CabinetPage() {
                             {ev.image ? (
                               <img src={ev.image} alt="" className="w-full h-full object-cover" />
                             ) : (
-                              ev.emoji
+                              <Calendar size={18} className="text-slate-400" />
                             )}
                           </div>
                       <div className="flex-1">
@@ -231,7 +231,7 @@ export default function CabinetPage() {
                         <div className="text-xs text-gray-400">{ev.date} · {ev.location}</div>
                       </div>
                       <span className="text-xs font-bold bg-green-100 text-green-600 px-3 py-1 rounded-full">
-                        ✓ {t('Записан', 'Жазылды')}
+                        {t('Записан', 'Жазылды')}
                       </span>
                     </div>
                   );
@@ -239,7 +239,7 @@ export default function CabinetPage() {
               </div>
             ) : (
               <div className="text-center py-8 text-gray-400">
-                <div className="text-4xl mb-2">🗓️</div>
+                <div className="text-4xl mb-2">️</div>
                 <p className="text-sm">{t('Вы не записаны ни на одно мероприятие', 'Сіз ешбір іс-шараға жазылмадыңыз')}</p>
                 <Link href="/news" className="mt-3 inline-block text-teal-500 font-bold text-sm hover:text-teal-600">
                   {t('Посмотреть мероприятия →', 'Іс-шараларды қарау →')}

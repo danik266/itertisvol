@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getSiteContext } from '@/lib/siteContext';
 
 export async function POST(req: NextRequest) {
     const { message } = await req.json();
@@ -11,6 +12,8 @@ export async function POST(req: NextRequest) {
     if (!apiKey) {
         return NextResponse.json({ error: 'GROQ_API_KEY not set' }, { status: 500 });
     }
+
+    const siteContext = await getSiteContext();
 
     try {
         const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -25,9 +28,12 @@ export async function POST(req: NextRequest) {
                     {
                         role: 'system',
                         content: `Ты виртуальный ассистент волонтёрской платформы IT Ertis Volunteer (Павлодар, Казахстан).
-Помогаешь пользователям узнать о волонтёрстве, направлениях, организациях и мероприятиях.
+Помогаешь пользователям разобраться в разделах сайта, направлениях и мероприятиях.
 Отвечай кратко, дружелюбно, на том языке на котором спрашивают (русский или казахский).
-Максимум 3-4 предложения. Не используй markdown.`
+Максимум 3-4 предложения. Не используй markdown.
+Опирайся только на данные ниже. Если чего-то в них нет — честно скажи, что не знаешь.
+
+${siteContext}`
                     },
                     { role: 'user', content: message }
                 ],
