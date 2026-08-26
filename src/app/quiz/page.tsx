@@ -154,8 +154,8 @@ export default function QuizPage() {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-3">
-            <Link href="/organizations" className="flex-1 btn-primary text-center py-4">
-              {t('Посмотреть организации', 'Ұйымдарды қарау')}
+            <Link href="/volunteers" className="flex-1 btn-primary text-center py-4">
+              {t('Посмотреть волонтёров', 'Волонтерлерді қарау')}
             </Link>
             <Link href="/tasks" className="flex-1 py-4 text-center font-bold border-2 border-teal-500 text-teal-600 rounded-full hover:bg-teal-50 transition-colors">
               {t('Открыть генератор', 'Генераторды ашу')}

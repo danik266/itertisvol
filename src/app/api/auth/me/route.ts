@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
+import { serializeUser } from '@/lib/serializeUser';
 import { getUserIdFromCookie } from '@/lib/jwt';
 
 export const dynamic = 'force-dynamic';
@@ -18,23 +19,7 @@ export async function GET() {
       return NextResponse.json({ user: null });
     }
 
-    return NextResponse.json({
-      user: {
-        _id: user._id,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        email: user.email,
-        city: user.city,
-        phone: user.phone,
-        dob: user.dob,
-        direction: user.direction,
-        scores: user.scores,
-        appliedOrgs: user.appliedOrgs,
-        appliedEvents: user.appliedEvents,
-        generationHistory: user.generationHistory,
-        role: user.role,
-      },
-    });
+    return NextResponse.json({ user: serializeUser(user) });
   } catch (error: unknown) {
     console.error('Auth me error:', error);
     return NextResponse.json({ user: null });

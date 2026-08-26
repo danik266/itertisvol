@@ -30,8 +30,8 @@ export default function Footer() {
           <ul className="space-y-2 text-sm text-gray-400">
             {[
               { href: '/', ru: 'Главная', kz: 'Басты бет' },
-              { href: '/organizations', ru: 'Организации', kz: 'Ұйымдар' },
-              { href: '/directions', ru: 'Направления', kz: 'Бағыттар' },
+              { href: '/volunteers', ru: 'Волонтёры', kz: 'Волонтерлер' },
+              { href: '/announcements', ru: 'Объявления', kz: 'Хабарландырулар' },
               { href: '/news', ru: 'Новости', kz: 'Жаңалықтар' },
               { href: '/tasks', ru: 'Генератор', kz: 'Генератор' },
             ].map(l => (

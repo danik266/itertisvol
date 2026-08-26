@@ -1,6 +1,24 @@
 'use client';
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 
+export interface RegisterInput {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  city: string;
+  phone: string;
+  dob: string;
+  entityType?: 'individual' | 'legal';
+  orgName?: string;
+  activityType?: string;
+  address?: string;
+  avatar?: string;
+  bio?: string;
+  socials?: Record<string, string>;
+  directions?: string[];
+}
+
 export interface User {
   _id: string;
   firstName: string;
@@ -9,9 +27,18 @@ export interface User {
   city: string;
   phone: string;
   dob: string;
+  entityType?: 'individual' | 'legal';
+  orgName?: string;
+  activityType?: string;
+  address?: string;
+  avatar?: string;
+  bio?: string;
+  socials?: Record<string, string>;
+  directions?: string[];
+  generationCount?: number;
+  isBlocked?: boolean;
   direction?: string;
   scores?: Record<string, number>;
-  appliedOrgs?: number[];
   appliedEvents?: number[];
   generationHistory?: string[];
   role: 'user' | 'admin';
@@ -21,15 +48,7 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   error: string | null;
-  register: (data: {
-    firstName: string;
-    lastName: string;
-    email: string;
-    password: string;
-    city: string;
-    phone: string;
-    dob: string;
-  }) => Promise<boolean>;
+  register: (data: RegisterInput) => Promise<boolean>;
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
   updateUser: (updates: Partial<User>) => Promise<void>;
@@ -66,15 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const register = useCallback(
-    async (data: {
-      firstName: string;
-      lastName: string;
-      email: string;
-      password: string;
-      city: string;
-      phone: string;
-      dob: string;
-    }): Promise<boolean> => {
+    async (data: RegisterInput): Promise<boolean> => {
       setError(null);
       try {
         const res = await fetch('/api/auth/register', {

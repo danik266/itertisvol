@@ -18,9 +18,10 @@ export default function Header() {
 
   const nav = [
     { href: '/main', labelRu: 'Главная', labelKz: 'Басты бет' },
-    { href: '/organizations', labelRu: 'Организации', labelKz: 'Ұйымдар' },
-    { href: '/directions', labelRu: 'Направления', labelKz: 'Бағыттар' },
-    { href: '/news', labelRu: 'Новости', labelKz: 'Жаңалықтар' },
+    { href: '/volunteers', labelRu: 'Волонтёры', labelKz: 'Волонтерлер' },
+    { href: '/experience', labelRu: 'Опыт', labelKz: 'Тәжірибе' },
+    { href: '/announcements', labelRu: 'Объявления', labelKz: 'Хабарландырулар' },
+    { href: '/needs', labelRu: 'Где мы нужны', labelKz: 'Біз қажет жерде' },
     { href: '/tasks', labelRu: 'Генератор', labelKz: 'Генератор' },
   ];
 
@@ -72,13 +73,6 @@ export default function Header() {
               className={`text-xs font-bold px-2 py-1 rounded-md transition-all ${lang === 'kz' ? 'bg-white text-teal-600 shadow-sm' : 'text-gray-500'}`}
             >ҚЗ</button>
           </div>
-
-          {/* Admin link */}
-          {user?.role === 'admin' && (
-            <Link href="/admin" className="hidden sm:inline-flex items-center gap-2 bg-red-50 text-red-700 font-semibold text-sm px-3 py-2 rounded-xl hover:bg-red-100 transition-colors">
-              Админ
-            </Link>
-          )}
 
           {/* Auth */}
           {user ? (

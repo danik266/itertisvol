@@ -92,7 +92,7 @@ export default function MainPage() {
                 <Link href="/auth" className="bg-orange-500 hover:bg-orange-600 text-white px-10 py-3.5 rounded-full font-bold text-center transition-all shadow-lg hover:shadow-orange-500/40">
                   {t('Стать волонтёром', 'Волонтер болу')}
                 </Link>
-                <Link href="/directions" className="border-2 border-white/70 hover:bg-white/20 text-white px-10 py-3.5 rounded-full font-bold text-center transition-all backdrop-blur-sm">
+                <Link href="/volunteers" className="border-2 border-white/70 hover:bg-white/20 text-white px-10 py-3.5 rounded-full font-bold text-center transition-all backdrop-blur-sm">
                   {t('Узнать больше', 'Көбірек білу')}
                 </Link>
               </div>
@@ -130,7 +130,7 @@ export default function MainPage() {
                 <Link href="/auth" className="bg-orange-500 hover:bg-orange-600 text-white px-10 py-3.5 rounded-full font-bold text-center transition-all shadow-lg hover:shadow-orange-500/40 hover:-translate-y-0.5">
                   {t('Стать волонтёром', 'Волонтер болу')}
                 </Link>
-                <Link href="/directions" className="border-2 border-white/70 hover:bg-white/20 text-white px-10 py-3.5 rounded-full font-bold text-center transition-all backdrop-blur-sm">
+                <Link href="/volunteers" className="border-2 border-white/70 hover:bg-white/20 text-white px-10 py-3.5 rounded-full font-bold text-center transition-all backdrop-blur-sm">
                   {t('Узнать больше', 'Көбірек білу')}
                 </Link>
               </div>
@@ -203,7 +203,7 @@ export default function MainPage() {
                 <h3 className="font-bold text-[#2b5a74] text-sm mb-6 min-h-[40px] flex items-center justify-center">
                   {t(item.titleRu, item.titleKz)}
                 </h3>
-                <Link href="/directions" className="bg-[#ff8a00] text-white font-bold text-xs py-2.5 px-6 rounded-full hover:bg-[#e67c00] transition-colors w-full">
+                <Link href="/volunteers" className="bg-[#ff8a00] text-white font-bold text-xs py-2.5 px-6 rounded-full hover:bg-[#e67c00] transition-colors w-full">
                   {t('Подробнее', 'Толығырақ')}
                 </Link>
               </div>

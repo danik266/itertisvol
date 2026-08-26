@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server';
 import Replicate from 'replicate';
 import { getUserIdFromCookie } from '@/lib/jwt';
+import dbConnect from '@/lib/mongodb';
+import User from '@/models/User';
+
+/** Сколько генераций в сутки доступно одному волонтёру. */
+const DAILY_LIMIT = 4;
 
 const replicate = new Replicate({
   auth: process.env.REPLICATE_API_TOKEN,
@@ -18,6 +23,39 @@ export async function POST(req: Request) {
     if (!prompt) {
       return NextResponse.json({ error: 'Запрос не может быть пустым' }, { status: 400 });
     }
+
+    await dbConnect();
+    const user = await User.findById(userId).select('generationCount generationResetAt isBlocked');
+    if (!user) return NextResponse.json({ error: 'Пользователь не найден' }, { status: 404 });
+    if (user.isBlocked) return NextResponse.json({ error: 'Генерация недоступна' }, { status: 403 });
+
+    // Счётчик обнуляется в начале новых суток.
+    const now = new Date();
+    const resetAt = user.generationResetAt ? new Date(user.generationResetAt) : null;
+    const sameDay =
+      resetAt &&
+      resetAt.getFullYear() === now.getFullYear() &&
+      resetAt.getMonth() === now.getMonth() &&
+      resetAt.getDate() === now.getDate();
+
+    const used = sameDay ? user.generationCount : 0;
+    if (used >= DAILY_LIMIT) {
+      return NextResponse.json(
+        {
+          error: `Дневной лимит исчерпан: ${DAILY_LIMIT} генерации в сутки. Попробуйте завтра.`,
+          limit: DAILY_LIMIT,
+          used,
+        },
+        { status: 429 }
+      );
+    }
+
+    await User.updateOne(
+      { _id: userId },
+      sameDay
+        ? { $inc: { generationCount: 1 } }
+        : { $set: { generationCount: 1, generationResetAt: now } }
+    );
 
     let output: any;
 

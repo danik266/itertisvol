@@ -3,167 +3,345 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useLang } from '@/lib/LangContext';
 import { useAuth } from '@/lib/AuthContext';
-import { User, Mail, Lock, Phone, MapPin, Calendar, AlertCircle } from 'lucide-react';
+import { useData } from '@/lib/DataContext';
+import { compressImage, ACCEPTED_IMAGE_TYPES } from '@/lib/image';
+import {
+  User, Mail, Lock, Phone, MapPin, Calendar, AlertCircle, Building2, Briefcase,
+  Camera, Check, ArrowRight, ArrowLeft, Instagram, Facebook, Send, Globe,
+} from 'lucide-react';
+
+type Mode = 'login' | 'register';
+type Entity = 'individual' | 'legal';
+
+const SOCIAL_FIELDS = [
+  { key: 'instagram', label: 'Instagram', icon: <Instagram size={15} />, placeholder: 'https://instagram.com/...' },
+  { key: 'telegram', label: 'Telegram', icon: <Send size={15} />, placeholder: 'https://t.me/...' },
+  { key: 'whatsapp', label: 'WhatsApp', icon: <Phone size={15} />, placeholder: '+7 700 000 00 00' },
+  { key: 'facebook', label: 'Facebook', icon: <Facebook size={15} />, placeholder: 'https://facebook.com/...' },
+  { key: 'website', label: 'Web', icon: <Globe size={15} />, placeholder: 'https://...' },
+] as const;
 
 export default function AuthPage() {
   const { t } = useLang();
-  const { register, login, error, clearError, loading: authLoading, setError } = useAuth();
+  const { register, login, error, clearError, setError } = useAuth();
+  const { directions } = useData();
   const router = useRouter();
-  const [mode, setMode] = useState<'login' | 'register'>('register');
+
+  const [mode, setMode] = useState<Mode>('register');
+  const [step, setStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
+  const [entityType, setEntityType] = useState<Entity>('individual');
+  const [avatar, setAvatar] = useState('');
+  const [picked, setPicked] = useState<string[]>([]);
+  const [socials, setSocials] = useState<Record<string, string>>({});
   const [form, setForm] = useState({
-    firstName: '',
-    lastName: '',
-    dob: '',
-    city: '',
-    phone: '',
-    email: '',
-    password: '',
+    firstName: '', lastName: '', orgName: '', activityType: '',
+    dob: '', city: '', address: '', phone: '', email: '', password: '', bio: '',
   });
 
-  const handle = (e: React.ChangeEvent<HTMLInputElement>) =>
+  const isLegal = entityType === 'legal';
+  const set = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setForm(f => ({ ...f, [e.target.name]: e.target.value }));
 
-  const submit = async () => {
-    setSubmitting(true);
-    clearError();
-
-    const { email, password, firstName, lastName, dob, city, phone } = form;
-    
-    // Frontend validation
-    if (!email || !password) {
-      setError(t('Заполните email и пароль', 'Email мен құпия сөзді толтырыңыз'));
-      setSubmitting(false);
-      return;
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      setError(t('Неверный формат email', 'Email форматы қате'));
-      setSubmitting(false);
-      return;
-    }
-
-    if (mode === 'register') {
-      if (!firstName || !lastName || !dob || !city || !phone) {
-        setError(t('Заполните все поля профиля', 'Барлық профиль өрістерін толтырыңыз'));
-        setSubmitting(false);
-        return;
-      }
-      if (password.length < 6) {
-        setError(t('Пароль должен содержать минимум 6 символов', 'Құпия сөз кемінде 6 таңбадан тұруы керек'));
-        setSubmitting(false);
-        return;
-      }
-    }
-
+  const onPickAvatar = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
     try {
-      if (mode === 'register') {
-        const ok = await register(form);
-        if (ok) router.push('/quiz');
-      } else {
-        const ok = await login(form.email, form.password);
-        if (ok) router.push('/cabinet');
+      setAvatar(await compressImage(file));
+    } catch {
+      setError(t('Не удалось обработать фото', 'Фотосуретті өңдеу мүмкін болмады'));
+    }
+  };
+
+  const toggleDirection = (id: string) =>
+    setPicked(p => (p.includes(id) ? p.filter(x => x !== id) : [...p, id]));
+
+  const validateStep0 = () => {
+    const { email, password, firstName, lastName, orgName, city, phone } = form;
+    if (!email || !password) return t('Заполните email и пароль', 'Email мен құпия сөзді толтырыңыз');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return t('Неверный формат email', 'Email форматы қате');
+    if (password.length < 6) return t('Пароль минимум 6 символов', 'Құпия сөз кемінде 6 таңба');
+    if (isLegal && !orgName) return t('Укажите наименование', 'Атауын көрсетіңіз');
+    if (!isLegal && (!firstName || !lastName)) return t('Укажите имя и фамилию', 'Аты-жөніңізді көрсетіңіз');
+    if (isLegal && !firstName) return t('Укажите контактное лицо', 'Байланысатын тұлғаны көрсетіңіз');
+    if (!city || !phone) return t('Укажите город и телефон', 'Қала мен телефонды көрсетіңіз');
+    return null;
+  };
+
+  const next = () => {
+    const problem = validateStep0();
+    if (problem) return setError(problem);
+    clearError();
+    setStep(1);
+  };
+
+  const submit = async () => {
+    clearError();
+    setSubmitting(true);
+    try {
+      if (mode === 'login') {
+        if (await login(form.email, form.password)) router.push('/cabinet');
+        return;
       }
+      if (!picked.length) {
+        setError(t('Выберите хотя бы одно направление', 'Кемінде бір бағыт таңдаңыз'));
+        return;
+      }
+      const ok = await register({
+        ...form, entityType, avatar, socials, directions: picked,
+      });
+      if (ok) router.push('/volunteers');
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-orange-50 flex items-center justify-center py-12 px-4">
-      <div className="bg-white rounded-3xl shadow-xl w-full max-w-md p-8 border border-gray-100">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="w-14 h-14 rounded-2xl bg-teal-gradient mx-auto flex items-center justify-center mb-3">
-            <span className="text-white font-display font-bold text-xl">IT</span>
+    <div className="min-h-screen bg-gradient-to-br from-teal-50 via-white to-orange-50 px-4 py-10">
+      <div className="mx-auto w-full max-w-xl">
+        <div className="text-center">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-500 to-teal-700">
+            <span className="font-display text-xl font-bold text-white">IT</span>
           </div>
-          <h1 className="font-display text-2xl font-bold">IT Ertis Volunteer</h1>
-          <p className="text-gray-500 text-sm mt-1">
-            {t('Присоединяйся к команде волонтёров', 'Волонтерлер командасына қосылыңыз')}
+          <h1 className="mt-3 font-display text-2xl font-bold">IT Ertis Volunteer</h1>
+          <p className="mt-1 text-sm text-slate-500">
+            {t('Единая платформа волонтёров Прииртышья', 'Ертіс өңірі волонтерлерінің біртұтас платформасы')}
           </p>
         </div>
 
-        {/* Toggle */}
-        <div className="flex bg-gray-100 rounded-xl p-1 mb-8">
-          {(['register', 'login'] as const).map(m => (
-            <button
-              key={m}
-              onClick={() => { setMode(m); clearError(); }}
-              className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${mode === m ? 'bg-white text-teal-600 shadow-sm' : 'text-gray-500'}`}
-            >
-              {m === 'register' ? t('Регистрация', 'Тіркелу') : t('Войти', 'Кіру')}
-            </button>
-          ))}
-        </div>
-
-        {/* Error message */}
-        {error && (
-          <div className="flex items-center gap-2 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 mb-4 text-sm">
-            <AlertCircle size={16} />
-            {error}
+        <div className="mt-8 rounded-3xl border border-slate-100 bg-white p-6 shadow-xl sm:p-8">
+          <div className="mb-6 flex rounded-xl bg-slate-100 p-1">
+            {(['register', 'login'] as Mode[]).map(m => (
+              <button
+                key={m}
+                onClick={() => { setMode(m); setStep(0); clearError(); }}
+                className={`flex-1 rounded-lg py-2 text-sm font-bold transition-all ${
+                  mode === m ? 'bg-white text-teal-600 shadow-sm' : 'text-slate-500'
+                }`}
+              >
+                {m === 'register' ? t('Регистрация', 'Тіркелу') : t('Войти', 'Кіру')}
+              </button>
+            ))}
           </div>
-        )}
 
-        <div className="space-y-4">
-          {mode === 'register' && (
-            <>
-              <div className="grid grid-cols-2 gap-3">
-                <InputField icon={<User size={16} />} name="firstName" placeholder={t('Имя', 'Аты')} value={form.firstName} onChange={handle} />
-                <InputField icon={<User size={16} />} name="lastName" placeholder={t('Фамилия', 'Тегі')} value={form.lastName} onChange={handle} />
-              </div>
-              <InputField icon={<Calendar size={16} />} name="dob" placeholder={t('Дата рождения', 'Туған күні')} type="date" value={form.dob} onChange={handle} />
-              <InputField icon={<MapPin size={16} />} name="city" placeholder={t('Город', 'Қала')} value={form.city} onChange={handle} />
-              <InputField icon={<Phone size={16} />} name="phone" placeholder={t('Телефон', 'Телефон')} type="tel" value={form.phone} onChange={handle} />
-            </>
+          {error && (
+            <div className="mb-4 flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              <AlertCircle size={16} className="mt-0.5 shrink-0" />
+              {error}
+            </div>
           )}
-          <InputField icon={<Mail size={16} />} name="email" placeholder="Email" type="email" value={form.email} onChange={handle} />
-          <InputField icon={<Lock size={16} />} name="password" placeholder={t('Пароль', 'Құпия сөз')} type="password" value={form.password} onChange={handle} />
-        </div>
 
-        <button
-          onClick={submit}
-          disabled={submitting || authLoading}
-          className="w-full mt-6 btn-primary text-base py-4 text-center shadow-lg shadow-orange-200 disabled:opacity-50"
-        >
-          {submitting
-            ? t('Загрузка...', 'Жүктелуде...')
-            : mode === 'register'
-            ? t('Зарегистрироваться и пройти анкету →', 'Тіркелу және анкетаны өту →')
-            : t('Войти', 'Кіру')}
-        </button>
+          {mode === 'login' ? (
+            <div className="space-y-4">
+              <Field icon={<Mail size={16} />} name="email" type="email" placeholder="Email" value={form.email} onChange={set} />
+              <Field icon={<Lock size={16} />} name="password" type="password" placeholder={t('Пароль', 'Құпия сөз')} value={form.password} onChange={set} />
+            </div>
+          ) : step === 0 ? (
+            <div className="space-y-5">
+              <div>
+                <Label>{t('Кто вы', 'Сіз кімсіз')}</Label>
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  <TypeButton active={!isLegal} onClick={() => setEntityType('individual')} icon={<User size={16} />}>
+                    {t('Физическое лицо', 'Жеке тұлға')}
+                  </TypeButton>
+                  <TypeButton active={isLegal} onClick={() => setEntityType('legal')} icon={<Building2 size={16} />}>
+                    {t('Юридическое лицо', 'Заңды тұлға')}
+                  </TypeButton>
+                </div>
+              </div>
 
-        {mode === 'register' && (
-          <p className="text-xs text-gray-400 text-center mt-4">
-            {t(
-              'После регистрации вы пройдёте анкетирование для определения направления',
-              'Тіркелгеннен кейін бағытты анықтау үшін анкетадан өтесіз'
+              <div className="flex items-center gap-4">
+                <label className="group relative cursor-pointer">
+                  <input type="file" accept={ACCEPTED_IMAGE_TYPES} onChange={onPickAvatar} className="hidden" />
+                  {avatar ? (
+                    <img src={avatar} alt="" className="h-20 w-20 rounded-2xl object-cover ring-2 ring-teal-200" />
+                  ) : (
+                    <div className="flex h-20 w-20 items-center justify-center rounded-2xl border-2 border-dashed border-slate-300 text-slate-400 transition-colors group-hover:border-teal-400 group-hover:text-teal-500">
+                      <Camera size={22} />
+                    </div>
+                  )}
+                </label>
+                <div className="text-sm text-slate-500">
+                  {t('Фото профиля', 'Профиль фотосы')}
+                  <div className="text-xs text-slate-400">{t('необязательно', 'міндетті емес')}</div>
+                </div>
+              </div>
+
+              {isLegal && (
+                <Field icon={<Building2 size={16} />} name="orgName" placeholder={t('Наименование организации', 'Ұйым атауы')} value={form.orgName} onChange={set} />
+              )}
+              <div className="grid grid-cols-2 gap-3">
+                <Field icon={<User size={16} />} name="firstName" placeholder={isLegal ? t('Контактное лицо', 'Байланыс тұлғасы') : t('Имя', 'Аты')} value={form.firstName} onChange={set} />
+                <Field icon={<User size={16} />} name="lastName" placeholder={t('Фамилия', 'Тегі')} value={form.lastName} onChange={set} />
+              </div>
+              {isLegal ? (
+                <Field icon={<Briefcase size={16} />} name="activityType" placeholder={t('Вид деятельности', 'Қызмет түрі')} value={form.activityType} onChange={set} />
+              ) : (
+                <Field icon={<Calendar size={16} />} name="dob" type="date" placeholder={t('Дата рождения', 'Туған күні')} value={form.dob} onChange={set} />
+              )}
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Field icon={<MapPin size={16} />} name="city" placeholder={t('Город', 'Қала')} value={form.city} onChange={set} />
+                <Field icon={<MapPin size={16} />} name="address" placeholder={t('Адрес', 'Мекенжай')} value={form.address} onChange={set} />
+              </div>
+              <Field icon={<Phone size={16} />} name="phone" type="tel" placeholder={t('Телефон', 'Телефон')} value={form.phone} onChange={set} />
+              <Field icon={<Mail size={16} />} name="email" type="email" placeholder="Email" value={form.email} onChange={set} />
+              <Field icon={<Lock size={16} />} name="password" type="password" placeholder={t('Пароль', 'Құпия сөз')} value={form.password} onChange={set} />
+            </div>
+          ) : (
+            <div className="space-y-6">
+              <div>
+                <Label>{t('Направления волонтёрства', 'Волонтерлік бағыттар')}</Label>
+                <p className="mt-1 text-xs text-slate-400">
+                  {t('Выберите одно или несколько — это обязательно', 'Бір немесе бірнешеуін таңдаңыз — міндетті')}
+                </p>
+                <div className="mt-3 space-y-2">
+                  {directions.map(d => {
+                    const active = picked.includes(d.id);
+                    return (
+                      <button
+                        key={d.id}
+                        onClick={() => toggleDirection(d.id)}
+                        className={`w-full rounded-xl border-2 p-3 text-left transition-all ${
+                          active ? 'border-transparent' : 'border-slate-200 hover:border-slate-300'
+                        }`}
+                        style={active ? { background: d.bg, borderColor: d.color } : undefined}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <div className="text-sm font-bold" style={{ color: active ? d.color : undefined }}>
+                              {t(d.labelRu, d.labelKz)}
+                            </div>
+                            <p className="mt-0.5 text-xs leading-relaxed text-slate-500">
+                              {t(d.descRu, d.descKz)}
+                            </p>
+                          </div>
+                          <span
+                            className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border-2 ${
+                              active ? 'border-transparent text-white' : 'border-slate-300'
+                            }`}
+                            style={active ? { background: d.color } : undefined}
+                          >
+                            {active && <Check size={12} />}
+                          </span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div>
+                <Label>{t('Социальные сети', 'Әлеуметтік желілер')}</Label>
+                <div className="mt-3 space-y-2">
+                  {SOCIAL_FIELDS.map(s => (
+                    <div key={s.key} className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">{s.icon}</span>
+                      <input
+                        value={socials[s.key] || ''}
+                        onChange={e => setSocials(v => ({ ...v, [s.key]: e.target.value }))}
+                        placeholder={s.placeholder}
+                        className="w-full rounded-xl border border-slate-200 py-2.5 pl-10 pr-3 text-sm outline-none transition-colors focus:border-teal-400"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <Label>{t('О себе', 'Өзің туралы')}</Label>
+                <textarea
+                  name="bio"
+                  value={form.bio}
+                  onChange={set}
+                  rows={3}
+                  placeholder={t('Пара слов о вас или организации', 'Өзіңіз туралы бірер сөз')}
+                  className="mt-2 w-full resize-none rounded-xl border border-slate-200 p-3 text-sm outline-none transition-colors focus:border-teal-400"
+                />
+              </div>
+            </div>
+          )}
+
+          <div className="mt-6 flex gap-3">
+            {mode === 'register' && step === 1 && (
+              <button
+                onClick={() => { setStep(0); clearError(); }}
+                className="flex items-center gap-1 rounded-full border-2 border-slate-200 px-5 py-3 text-sm font-bold text-slate-500 transition-colors hover:border-slate-300"
+              >
+                <ArrowLeft size={16} />
+              </button>
             )}
-          </p>
-        )}
+            <button
+              onClick={mode === 'register' && step === 0 ? next : submit}
+              disabled={submitting}
+              className="flex flex-1 items-center justify-center gap-2 rounded-full bg-gradient-to-r from-orange-500 to-orange-600 py-3.5 text-sm font-bold text-white shadow-lg shadow-orange-200 transition-transform hover:scale-[1.01] active:scale-95 disabled:opacity-50"
+            >
+              {submitting
+                ? t('Отправляем...', 'Жіберілуде...')
+                : mode === 'login'
+                ? t('Войти', 'Кіру')
+                : step === 0
+                ? t('Далее', 'Келесі')
+                : t('Завершить регистрацию', 'Тіркеуді аяқтау')}
+              {!submitting && <ArrowRight size={16} />}
+            </button>
+          </div>
+
+          {mode === 'register' && (
+            <div className="mt-4 flex justify-center gap-1.5">
+              {[0, 1].map(i => (
+                <span
+                  key={i}
+                  className={`h-1.5 rounded-full transition-all ${
+                    step === i ? 'w-6 bg-teal-500' : 'w-1.5 bg-slate-200'
+                  }`}
+                />
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
 }
 
-function InputField({ icon, name, placeholder, type = 'text', value, onChange }: {
-  icon: React.ReactNode;
-  name: string;
-  placeholder: string;
-  type?: string;
-  value: string;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+function Label({ children }: { children: React.ReactNode }) {
+  return <span className="text-xs font-bold uppercase tracking-wider text-slate-400">{children}</span>;
+}
+
+function TypeButton({
+  active, onClick, icon, children,
+}: {
+  active: boolean; onClick: () => void; icon: React.ReactNode; children: React.ReactNode;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex items-center justify-center gap-2 rounded-xl border-2 py-3 text-sm font-semibold transition-all ${
+        active ? 'border-teal-500 bg-teal-50 text-teal-700' : 'border-slate-200 text-slate-500 hover:border-slate-300'
+      }`}
+    >
+      {icon}
+      {children}
+    </button>
+  );
+}
+
+function Field({
+  icon, name, placeholder, type = 'text', value, onChange,
+}: {
+  icon: React.ReactNode; name: string; placeholder: string; type?: string;
+  value: string; onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }) {
   return (
     <div className="relative">
-      <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">{icon}</div>
+      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">{icon}</span>
       <input
         name={name}
         type={type}
         placeholder={placeholder}
         value={value}
         onChange={onChange}
-        className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-300 focus:border-transparent transition-all"
+        className="w-full rounded-xl border border-slate-200 py-3 pl-10 pr-3 text-sm outline-none transition-colors focus:border-teal-400 focus:ring-2 focus:ring-teal-100"
       />
     </div>
   );

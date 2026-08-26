@@ -3,41 +3,56 @@ import bcrypt from 'bcryptjs';
 import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
 import { signToken, setAuthCookie } from '@/lib/jwt';
+import { serializeUser } from '@/lib/serializeUser';
+
+const SOCIAL_KEYS = ['instagram', 'telegram', 'whatsapp', 'facebook', 'website'] as const;
+/** Аватар приходит как data URL, сжатый на клиенте. Ограничиваем ~300 КБ. */
+const MAX_AVATAR_CHARS = 400_000;
 
 export async function POST(req: Request) {
   try {
     await dbConnect();
     const body = await req.json();
-    const { firstName, lastName, email, password, city, phone, dob } = body;
+    const {
+      firstName, lastName, email, password, city, phone, dob,
+      entityType, orgName, activityType, address, avatar, bio, socials, directions,
+    } = body;
 
-    if (!email || !password || !firstName || !lastName || !dob || !city || !phone) {
-      return NextResponse.json(
-        { error: 'Заполните все обязательные поля' },
-        { status: 400 }
-      );
+    const isLegal = entityType === 'legal';
+
+    if (!email || !password || !firstName || !city || !phone) {
+      return NextResponse.json({ error: 'Заполните все обязательные поля' }, { status: 400 });
+    }
+    if (isLegal && !orgName) {
+      return NextResponse.json({ error: 'Укажите наименование организации' }, { status: 400 });
+    }
+    if (!isLegal && !lastName) {
+      return NextResponse.json({ error: 'Укажите фамилию' }, { status: 400 });
+    }
+    if (!Array.isArray(directions) || directions.length === 0) {
+      return NextResponse.json({ error: 'Выберите хотя бы одно направление' }, { status: 400 });
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      return NextResponse.json(
-        { error: 'Неверный формат email' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Неверный формат email' }, { status: 400 });
     }
-
     if (password.length < 6) {
-      return NextResponse.json(
-        { error: 'Пароль должен содержать минимум 6 символов' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Пароль должен содержать минимум 6 символов' }, { status: 400 });
+    }
+    if (typeof avatar === 'string' && avatar.length > MAX_AVATAR_CHARS) {
+      return NextResponse.json({ error: 'Фото слишком большое' }, { status: 400 });
     }
 
     const existing = await User.findOne({ email: email.toLowerCase() });
     if (existing) {
-      return NextResponse.json(
-        { error: 'Пользователь с таким email уже существует' },
-        { status: 409 }
-      );
+      return NextResponse.json({ error: 'Пользователь с таким email уже существует' }, { status: 409 });
+    }
+
+    const cleanSocials: Record<string, string> = {};
+    for (const key of SOCIAL_KEYS) {
+      const value = socials?.[key];
+      if (typeof value === 'string' && value.trim()) cleanSocials[key] = value.trim();
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -50,7 +65,14 @@ export async function POST(req: Request) {
       city: city || '',
       phone: phone || '',
       dob: dob || '',
-      appliedOrgs: [],
+      entityType: isLegal ? 'legal' : 'individual',
+      orgName: isLegal ? orgName : '',
+      activityType: activityType || '',
+      address: address || '',
+      avatar: typeof avatar === 'string' ? avatar : '',
+      bio: bio || '',
+      socials: cleanSocials,
+      directions: directions.filter((d: unknown) => typeof d === 'string'),
       appliedEvents: [],
       generationHistory: [],
     });
@@ -58,27 +80,9 @@ export async function POST(req: Request) {
     const token = await signToken(user._id.toString());
     await setAuthCookie(token);
 
-    return NextResponse.json({
-      user: {
-        _id: user._id,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        email: user.email,
-        city: user.city,
-        phone: user.phone,
-        dob: user.dob,
-        direction: user.direction,
-        scores: user.scores,
-        appliedOrgs: user.appliedOrgs,
-        appliedEvents: user.appliedEvents,
-        generationHistory: user.generationHistory,
-      },
-    });
+    return NextResponse.json({ user: serializeUser(user) });
   } catch (error: unknown) {
     console.error('Register error:', error);
-    return NextResponse.json(
-      { error: 'Ошибка сервера' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Ошибка сервера' }, { status: 500 });
   }
 }
