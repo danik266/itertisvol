@@ -39,13 +39,16 @@ export default function QrPanel({ path, caption }: QrPanelProps) {
           <div className="h-44 w-44 animate-pulse rounded-2xl bg-slate-100 sm:h-56 sm:w-56" />
         )}
       </div>
+      {/* Панель стоит на тёмной подложке, поэтому подписи всегда светлые. */}
       {caption && (
-        <p className="max-w-[16rem] text-center text-sm leading-relaxed text-slate-500">{caption}</p>
+        <p className="max-w-[16rem] text-center text-sm font-medium leading-relaxed text-white/90">
+          {caption}
+        </p>
       )}
       {url && (
         <a
           href={path}
-          className="break-all text-center text-xs font-medium text-teal-600 underline-offset-2 hover:underline"
+          className="break-all rounded-full bg-white/15 px-3 py-1.5 text-center text-xs font-semibold text-white ring-1 ring-white/25 transition-colors hover:bg-white/25"
         >
           {url.replace(/^https?:\/\//, '')}
         </a>

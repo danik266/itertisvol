@@ -10,6 +10,7 @@ export function serializeUser(user: IUser) {
     city: user.city,
     phone: user.phone,
     dob: user.dob,
+    accountType: user.accountType,
     entityType: user.entityType,
     orgName: user.orgName,
     activityType: user.activityType,

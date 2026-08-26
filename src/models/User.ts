@@ -1,6 +1,8 @@
 import mongoose, { Schema, Document, Model } from 'mongoose';
 
 export type EntityType = 'individual' | 'legal';
+/** Волонтёр попадает в общий каталог, обычный пользователь — нет. */
+export type AccountType = 'volunteer' | 'user';
 
 export interface ISocials {
   instagram?: string;
@@ -18,6 +20,7 @@ export interface IUser extends Document {
   city: string;
   phone: string;
   dob: string;
+  accountType: AccountType;
   /** Физическое или юридическое лицо — влияет на набор полей анкеты. */
   entityType: EntityType;
   /** Наименование и вид деятельности заполняют юридические лица. */
@@ -53,6 +56,7 @@ const UserSchema = new Schema<IUser>(
     city: { type: String, default: '' },
     phone: { type: String, default: '' },
     dob: { type: String, default: '' },
+    accountType: { type: String, enum: ['volunteer', 'user'], default: 'volunteer' },
     entityType: { type: String, enum: ['individual', 'legal'], default: 'individual' },
     orgName: { type: String, default: '' },
     activityType: { type: String, default: '' },
@@ -74,7 +78,7 @@ const UserSchema = new Schema<IUser>(
 );
 
 // Лента волонтёров сортируется по дате регистрации, фильтруется по направлению.
-UserSchema.index({ createdAt: -1 });
+UserSchema.index({ accountType: 1, createdAt: -1 });
 UserSchema.index({ directions: 1 });
 
 export default (mongoose.models.User as Model<IUser>) || mongoose.model<IUser>('User', UserSchema);

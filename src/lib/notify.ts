@@ -25,7 +25,9 @@ export async function notify({ user, type, actor, post, text, link }: NotifyInpu
 /** Рассылка всем волонтёрам — используется для срочных запросов помощи. */
 export async function notifyAllVolunteers(input: Omit<NotifyInput, 'user'>) {
   try {
-    const users = await User.find({ isBlocked: { $ne: true } }).select('_id').lean();
+    const users = await User.find({ accountType: 'volunteer', isBlocked: { $ne: true } })
+      .select('_id')
+      .lean();
     const docs = users
       .filter(u => !input.actor || String(u._id) !== String(input.actor))
       .map(u => ({

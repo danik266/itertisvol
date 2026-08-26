@@ -8,10 +8,12 @@ import { compressImage, ACCEPTED_IMAGE_TYPES } from '@/lib/image';
 import {
   User, Mail, Lock, Phone, MapPin, Calendar, AlertCircle, Building2, Briefcase,
   Camera, Check, ArrowRight, ArrowLeft, Instagram, Facebook, Send, Globe,
+  HeartHandshake, UserRound,
 } from 'lucide-react';
 
 type Mode = 'login' | 'register';
 type Entity = 'individual' | 'legal';
+type Account = 'volunteer' | 'user';
 
 const SOCIAL_FIELDS = [
   { key: 'instagram', label: 'Instagram', icon: <Instagram size={15} />, placeholder: 'https://instagram.com/...' },
@@ -30,6 +32,7 @@ export default function AuthPage() {
   const [mode, setMode] = useState<Mode>('register');
   const [step, setStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
+  const [accountType, setAccountType] = useState<Account>('volunteer');
   const [entityType, setEntityType] = useState<Entity>('individual');
   const [avatar, setAvatar] = useState('');
   const [picked, setPicked] = useState<string[]>([]);
@@ -40,6 +43,7 @@ export default function AuthPage() {
   });
 
   const isLegal = entityType === 'legal';
+  const isVolunteer = accountType === 'volunteer';
   const set = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
     setForm(f => ({ ...f, [e.target.name]: e.target.value }));
 
@@ -72,7 +76,8 @@ export default function AuthPage() {
     const problem = validateStep0();
     if (problem) return setError(problem);
     clearError();
-    setStep(1);
+    if (isVolunteer) setStep(1);
+    else submit();
   };
 
   const submit = async () => {
@@ -83,14 +88,15 @@ export default function AuthPage() {
         if (await login(form.email, form.password)) router.push('/cabinet');
         return;
       }
-      if (!picked.length) {
+      if (isVolunteer && !picked.length) {
         setError(t('Выберите хотя бы одно направление', 'Кемінде бір бағыт таңдаңыз'));
         return;
       }
       const ok = await register({
-        ...form, entityType, avatar, socials, directions: picked,
+        ...form, accountType, entityType, avatar, socials,
+        directions: isVolunteer ? picked : [],
       });
-      if (ok) router.push('/volunteers');
+      if (ok) router.push(isVolunteer ? '/volunteers' : '/cabinet');
     } finally {
       setSubmitting(false);
     }
@@ -138,6 +144,26 @@ export default function AuthPage() {
             </div>
           ) : step === 0 ? (
             <div className="space-y-5">
+              <div>
+                <Label>{t('Тип аккаунта', 'Тіркелгі түрі')}</Label>
+                <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                  <RoleCard
+                    active={isVolunteer}
+                    onClick={() => setAccountType('volunteer')}
+                    title={t('Волонтёр', 'Волонтер')}
+                    hint={t('Попадёте в общий каталог, сможете публиковать', 'Жалпы каталогқа кіресіз, жариялай аласыз')}
+                    icon={<HeartHandshake size={18} />}
+                  />
+                  <RoleCard
+                    active={!isVolunteer}
+                    onClick={() => setAccountType('user')}
+                    title={t('Пользователь', 'Қолданушы')}
+                    hint={t('Просто смотреть и откликаться', 'Тек қарау және жауап беру')}
+                    icon={<UserRound size={18} />}
+                  />
+                </div>
+              </div>
+
               <div>
                 <Label>{t('Кто вы', 'Сіз кімсіз')}</Label>
                 <div className="mt-2 grid grid-cols-2 gap-2">
@@ -280,13 +306,15 @@ export default function AuthPage() {
                 : mode === 'login'
                 ? t('Войти', 'Кіру')
                 : step === 0
-                ? t('Далее', 'Келесі')
+                ? isVolunteer
+                  ? t('Далее', 'Келесі')
+                  : t('Зарегистрироваться', 'Тіркелу')
                 : t('Завершить регистрацию', 'Тіркеуді аяқтау')}
               {!submitting && <ArrowRight size={16} />}
             </button>
           </div>
 
-          {mode === 'register' && (
+          {mode === 'register' && isVolunteer && (
             <div className="mt-4 flex justify-center gap-1.5">
               {[0, 1].map(i => (
                 <span
@@ -301,6 +329,29 @@ export default function AuthPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+function RoleCard({
+  active, onClick, title, hint, icon,
+}: {
+  active: boolean; onClick: () => void; title: string; hint: string; icon: React.ReactNode;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`rounded-2xl border-2 p-4 text-left transition-all ${
+        active ? 'border-teal-500 bg-teal-50' : 'border-slate-200 hover:border-slate-300'
+      }`}
+    >
+      <span className={`inline-flex items-center gap-2 text-sm font-bold ${
+        active ? 'text-teal-700' : 'text-slate-600'
+      }`}>
+        {icon}
+        {title}
+      </span>
+      <span className="mt-1 block text-xs leading-relaxed text-slate-500">{hint}</span>
+    </button>
   );
 }
 

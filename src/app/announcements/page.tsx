@@ -6,6 +6,7 @@ export default function AnnouncementsPage() {
   const { t } = useLang();
   return (
     <PostFeed
+      accent="amber"
       type="announcement"
       title={t('Объявления', 'Хабарландырулар')}
       subtitle={t(

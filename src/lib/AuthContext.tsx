@@ -1,6 +1,8 @@
 'use client';
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 
+export type AccountType = 'volunteer' | 'user';
+
 export interface RegisterInput {
   firstName: string;
   lastName: string;
@@ -9,6 +11,7 @@ export interface RegisterInput {
   city: string;
   phone: string;
   dob: string;
+  accountType?: AccountType;
   entityType?: 'individual' | 'legal';
   orgName?: string;
   activityType?: string;
@@ -27,6 +30,7 @@ export interface User {
   city: string;
   phone: string;
   dob: string;
+  accountType?: AccountType;
   entityType?: 'individual' | 'legal';
   orgName?: string;
   activityType?: string;

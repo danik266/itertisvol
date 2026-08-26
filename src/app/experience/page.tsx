@@ -6,6 +6,7 @@ export default function ExperiencePage() {
   const { t } = useLang();
   return (
     <PostFeed
+      accent="violet"
       type="experience"
       title={t('Опыт волонтёров', 'Волонтерлер тәжірибесі')}
       subtitle={t(

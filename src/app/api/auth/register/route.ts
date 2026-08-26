@@ -15,10 +15,12 @@ export async function POST(req: Request) {
     const body = await req.json();
     const {
       firstName, lastName, email, password, city, phone, dob,
-      entityType, orgName, activityType, address, avatar, bio, socials, directions,
+      accountType, entityType, orgName, activityType, address, avatar, bio, socials, directions,
     } = body;
 
     const isLegal = entityType === 'legal';
+    // Волонтёр попадает в каталог и выбирает направления; обычный пользователь — нет.
+    const isVolunteer = accountType !== 'user';
 
     if (!email || !password || !firstName || !city || !phone) {
       return NextResponse.json({ error: 'Заполните все обязательные поля' }, { status: 400 });
@@ -29,7 +31,7 @@ export async function POST(req: Request) {
     if (!isLegal && !lastName) {
       return NextResponse.json({ error: 'Укажите фамилию' }, { status: 400 });
     }
-    if (!Array.isArray(directions) || directions.length === 0) {
+    if (isVolunteer && (!Array.isArray(directions) || directions.length === 0)) {
       return NextResponse.json({ error: 'Выберите хотя бы одно направление' }, { status: 400 });
     }
 
@@ -65,6 +67,7 @@ export async function POST(req: Request) {
       city: city || '',
       phone: phone || '',
       dob: dob || '',
+      accountType: isVolunteer ? 'volunteer' : 'user',
       entityType: isLegal ? 'legal' : 'individual',
       orgName: isLegal ? orgName : '',
       activityType: activityType || '',
@@ -72,7 +75,9 @@ export async function POST(req: Request) {
       avatar: typeof avatar === 'string' ? avatar : '',
       bio: bio || '',
       socials: cleanSocials,
-      directions: directions.filter((d: unknown) => typeof d === 'string'),
+      directions: isVolunteer
+        ? (directions as unknown[]).filter((d): d is string => typeof d === 'string')
+        : [],
       appliedEvents: [],
       generationHistory: [],
     });

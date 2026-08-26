@@ -8,6 +8,13 @@ export const dynamic = 'force-dynamic';
 const PUBLIC_FIELDS =
   'firstName lastName avatar city directions entityType orgName activityType socials bio createdAt';
 
+/** В каталог попадают только волонтёры: обычные пользователи и админы скрыты. */
+const CATALOG_FILTER = {
+  accountType: 'volunteer',
+  role: { $ne: 'admin' },
+  isBlocked: { $ne: true },
+} as const;
+
 export async function GET(req: NextRequest) {
   try {
     await dbConnect();
@@ -16,7 +23,7 @@ export async function GET(req: NextRequest) {
     const since = searchParams.get('since');
     const limit = Math.min(Number(searchParams.get('limit')) || 60, 200);
 
-    const query: Record<string, unknown> = { isBlocked: { $ne: true } };
+    const query: Record<string, unknown> = { ...CATALOG_FILTER };
     if (direction && direction !== 'all') query.directions = direction;
     // Лента в реальном времени: клиент дозапрашивает только тех, кто появился позже.
     if (since) {
@@ -30,7 +37,7 @@ export async function GET(req: NextRequest) {
       .limit(limit)
       .lean();
 
-    const total = await User.countDocuments({ isBlocked: { $ne: true } });
+    const total = await User.countDocuments(CATALOG_FILTER);
 
     return NextResponse.json({ volunteers, total });
   } catch (error) {

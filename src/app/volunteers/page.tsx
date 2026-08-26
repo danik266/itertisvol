@@ -6,6 +6,8 @@ import { useData } from '@/lib/DataContext';
 import QrPanel from '@/components/QrPanel';
 import VolunteerCard, { Volunteer } from '@/components/VolunteerCard';
 import VolunteerDialog from '@/components/VolunteerDialog';
+import ScrollRow from '@/components/ScrollRow';
+import { useAuth } from '@/lib/AuthContext';
 import { Users, Search, SlidersHorizontal } from 'lucide-react';
 
 const POLL_MS = 10000;
@@ -13,6 +15,9 @@ const POLL_MS = 10000;
 export default function VolunteersPage() {
   const { t } = useLang();
   const { directions } = useData();
+  const { user } = useAuth();
+  // Блок со сканированием нужен ведущему на сцене, обычным посетителям — нет.
+  const showQr = user?.role === 'admin';
 
   const [volunteers, setVolunteers] = useState<Volunteer[]>([]);
   const [total, setTotal] = useState(0);
@@ -83,7 +88,7 @@ export default function VolunteersPage() {
     <div className="min-h-screen bg-slate-50">
       {/* Знакомство: QR + живая лента */}
       <section className="bg-gradient-to-br from-[#0f5f63] via-[#137b80] to-[#1a9ba1] px-4 py-12 text-white sm:py-16">
-        <div className="mx-auto grid max-w-6xl items-center gap-10 lg:grid-cols-[1.1fr_auto]">
+        <div className={`mx-auto grid max-w-6xl items-center gap-10 ${showQr ? 'lg:grid-cols-[1.1fr_auto]' : ''}`}>
           <div>
             <span className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold uppercase tracking-wider">
               {t('Знакомство', 'Танысу')}
@@ -92,10 +97,15 @@ export default function VolunteersPage() {
               {t('Давайте знакомиться', 'Танысайық')}
             </h1>
             <p className="mt-4 max-w-xl text-base leading-relaxed text-white/80 sm:text-lg">
-              {t(
-                'Отсканируйте код — и станьте частью единой цифровой платформы волонтёров Павлодарской области.',
-                'Кодты сканерлеңіз — Павлодар облысы волонтерлерінің біртұтас цифрлық платформасының бөлігі болыңыз.'
-              )}
+              {showQr
+                ? t(
+                    'Отсканируйте код — и станьте частью единой цифровой платформы волонтёров Павлодарской области.',
+                    'Кодты сканерлеңіз — Павлодар облысы волонтерлерінің біртұтас цифрлық платформасының бөлігі болыңыз.'
+                  )
+                : t(
+                    'Волонтёры и организации Павлодарской области — в одном цифровом пространстве.',
+                    'Павлодар облысының волонтерлері мен ұйымдары — бір цифрлық кеңістікте.'
+                  )}
             </p>
 
             <div className="mt-8 flex flex-wrap items-center gap-6">
@@ -112,12 +122,14 @@ export default function VolunteersPage() {
             </div>
           </div>
 
-          <div className="justify-self-center lg:justify-self-end">
-            <QrPanel
-              path="/auth"
-              caption={t('Наведите камеру телефона', 'Телефон камерасын бағыттаңыз')}
-            />
-          </div>
+          {showQr && (
+            <div className="justify-self-center lg:justify-self-end">
+              <QrPanel
+                path="/auth"
+                caption={t('Наведите камеру телефона', 'Телефон камерасын бағыттаңыз')}
+              />
+            </div>
+          )}
         </div>
       </section>
 
@@ -140,7 +152,7 @@ export default function VolunteersPage() {
             </div>
           </div>
 
-          <div className="scrollbar-none -mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-1">
+          <ScrollRow className="mt-3">
             <FilterChip active={filter === 'all'} onClick={() => setFilter('all')}>
               {t('Все направления', 'Барлық бағыттар')}
             </FilterChip>
@@ -154,7 +166,7 @@ export default function VolunteersPage() {
                 {t(d.labelRu, d.labelKz)}
               </FilterChip>
             ))}
-          </div>
+          </ScrollRow>
         </div>
       </div>
 

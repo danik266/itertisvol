@@ -6,12 +6,15 @@ import PostComposer from '@/components/PostComposer';
 import PostCard, { Post, PostType } from '@/components/PostCard';
 import CommentsDialog from '@/components/CommentsDialog';
 import QrPanel from '@/components/QrPanel';
+import ScrollRow from '@/components/ScrollRow';
+import { useAuth } from '@/lib/AuthContext';
+import { ACCENTS, AccentName } from '@/lib/accents';
 import { Inbox } from 'lucide-react';
 
 const POLL_MS = 12000;
 
 export default function PostFeed({
-  type, title, subtitle, qrPath, qrCaption, showMonths,
+  type, title, subtitle, qrPath, qrCaption, showMonths, accent = 'teal',
 }: {
   type: PostType;
   title: string;
@@ -19,9 +22,14 @@ export default function PostFeed({
   qrPath?: string;
   qrCaption?: string;
   showMonths?: boolean;
+  accent?: AccentName;
 }) {
   const { t, lang } = useLang();
   const { directions } = useData();
+  const { user } = useAuth();
+  const theme = ACCENTS[accent];
+  // QR — инструмент ведущего на сцене, посетителям он не нужен.
+  const showQr = Boolean(qrPath) && user?.role === 'admin';
 
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
@@ -87,13 +95,13 @@ export default function PostFeed({
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <section className="bg-gradient-to-br from-[#0f5f63] via-[#137b80] to-[#1a9ba1] px-4 py-10 text-white sm:py-14">
-        <div className="mx-auto grid max-w-5xl items-center gap-8 lg:grid-cols-[1.2fr_auto]">
+      <section className={`bg-gradient-to-br ${theme.hero} px-4 py-10 text-white sm:py-14`}>
+        <div className={`mx-auto grid max-w-5xl items-center gap-8 ${showQr ? 'lg:grid-cols-[1.2fr_auto]' : ''}`}>
           <div>
             <h1 className="font-display text-3xl font-bold leading-tight sm:text-4xl">{title}</h1>
             <p className="mt-3 max-w-xl text-base leading-relaxed text-white/80">{subtitle}</p>
           </div>
-          {qrPath && (
+          {showQr && qrPath && (
             <div className="justify-self-center lg:justify-self-end">
               <QrPanel path={qrPath} caption={qrCaption} />
             </div>
@@ -104,8 +112,8 @@ export default function PostFeed({
       <div className="mx-auto max-w-2xl px-4 py-8">
         <PostComposer type={type} onCreated={p => setPosts(prev => [p as Post, ...prev])} />
 
-        <div className="scrollbar-none -mx-4 mt-6 flex gap-2 overflow-x-auto px-4 pb-1">
-          <Chip active={direction === 'all'} onClick={() => setDirection('all')}>
+        <ScrollRow className="mt-6">
+          <Chip active={direction === 'all'} accent={theme.hex} onClick={() => setDirection('all')}>
             {t('Все', 'Барлығы')}
           </Chip>
           {directions.map(d => (
@@ -113,19 +121,19 @@ export default function PostFeed({
               {t(d.labelRu, d.labelKz)}
             </Chip>
           ))}
-        </div>
+        </ScrollRow>
 
         {showMonths && (
-          <div className="scrollbar-none -mx-4 mt-2 flex gap-2 overflow-x-auto px-4 pb-1">
-            <Chip active={month === 'all'} onClick={() => setMonth('all')}>
+          <ScrollRow className="mt-2">
+            <Chip active={month === 'all'} accent={theme.hex} onClick={() => setMonth('all')}>
               {t('Любой месяц', 'Кез келген ай')}
             </Chip>
             {months.map(m => (
-              <Chip key={m.value} active={month === m.value} onClick={() => setMonth(m.value)}>
+              <Chip key={m.value} active={month === m.value} accent={theme.hex} onClick={() => setMonth(m.value)}>
                 {m.label}
               </Chip>
             ))}
-          </div>
+          </ScrollRow>
         )}
 
         <div className="mt-6 space-y-4">
@@ -159,15 +167,18 @@ export default function PostFeed({
 }
 
 function Chip({
-  active, color, onClick, children,
-}: { active: boolean; color?: string; onClick: () => void; children: React.ReactNode }) {
+  active, color, accent, onClick, children,
+}: {
+  active: boolean; color?: string; accent?: string;
+  onClick: () => void; children: React.ReactNode;
+}) {
   return (
     <button
       onClick={onClick}
       className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold transition-all ${
         active ? 'text-white shadow-sm' : 'bg-white text-slate-600 hover:bg-slate-100'
       }`}
-      style={active ? { background: color || '#0f766e' } : undefined}
+      style={active ? { background: color || accent || '#0f766e' } : undefined}
     >
       {children}
     </button>

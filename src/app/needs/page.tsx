@@ -6,6 +6,7 @@ export default function NeedsPage() {
   const { t } = useLang();
   return (
     <PostFeed
+      accent="rose"
       type="need"
       title={t('Где мы нужны', 'Біз қажет жерде')}
       subtitle={t(

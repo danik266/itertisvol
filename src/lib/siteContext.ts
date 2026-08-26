@@ -18,7 +18,7 @@ export async function getSiteContext(): Promise<string> {
     await dbConnect();
     const [directions, volunteers, announcements, needs] = await Promise.all([
       Direction.find().select('id labelRu descRu').lean(),
-      User.countDocuments({ isBlocked: { $ne: true } }),
+      User.countDocuments({ accountType: 'volunteer', role: { $ne: 'admin' }, isBlocked: { $ne: true } }),
       Post.find({ type: 'announcement', status: 'published' })
         .select('text location eventDate')
         .sort({ createdAt: -1 })
