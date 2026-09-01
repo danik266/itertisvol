@@ -5,7 +5,7 @@ import { useLang } from '@/lib/LangContext';
 import { MessageSquare, X, Send, Volume2, VolumeX, Mic, MicOff } from 'lucide-react';
 
 export default function AssistantWidget() {
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<{ role: 'user' | 'assistant'; text: string }[]>([]);
@@ -44,7 +44,8 @@ export default function AssistantWidget() {
     }
 
     const recognition = new SR();
-    recognition.lang = 'ru-RU';
+    // Слушаем на языке интерфейса, иначе в казахском режиме речь не распознаётся.
+    recognition.lang = lang === 'kz' ? 'kk-KZ' : 'ru-RU';
     recognition.interimResults = false;
     recognition.onresult = (e: any) => {
         const transcript = e.results[0][0].transcript;
@@ -69,7 +70,7 @@ export default function AssistantWidget() {
       const res = await fetch('/api/tts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text }),
+        body: JSON.stringify({ text, language: lang }),
       });
 
       if (!res.ok) throw new Error('Premium TTS not configured or failed');
@@ -96,7 +97,8 @@ export default function AssistantWidget() {
           voices = window.speechSynthesis.getVoices();
         }
 
-        const maleVoice = voices.find(v => v.lang.includes('ru') && (
+        const prefix = lang === 'kz' ? 'kk' : 'ru';
+        const maleVoice = voices.find(v => v.lang.includes(prefix) && (
             v.name.toLowerCase().includes('pavel') || 
             v.name.toLowerCase().includes('boris') || 
             v.name.toLowerCase().includes('yuri') ||
@@ -110,13 +112,13 @@ export default function AssistantWidget() {
             utt.pitch = 0.9;
             utt.rate = 1.0;
         } else {
-            const anyRu = voices.find(v => v.lang.includes('ru'));
+            const anyRu = voices.find(v => v.lang.includes(prefix)) || voices.find(v => v.lang.includes('ru'));
             if (anyRu) utt.voice = anyRu;
             utt.pitch = 0.65;
             utt.rate = 1.0;
         }
 
-        utt.lang = 'ru-RU';
+        utt.lang = lang === 'kz' ? 'kk-KZ' : 'ru-RU';
         utt.onstart = () => setSpeaking(true);
         utt.onend = () => setSpeaking(false);
         window.speechSynthesis.speak(utt);

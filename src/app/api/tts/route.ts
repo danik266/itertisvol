@@ -1,136 +1,132 @@
 import { NextRequest, NextResponse } from 'next/server';
-import TextToSpeech from "@google-cloud/text-to-speech";
+import TextToSpeech from '@google-cloud/text-to-speech';
+import { speechLang, forSpeech } from '@/lib/speech';
 
-// Initialize Google TTS client if key is present
+export const dynamic = 'force-dynamic';
+export const maxDuration = 30;
+
 let googleClient: any = null;
 if (process.env.GOOGLE_TTS_API_KEY) {
   try {
-    googleClient = new TextToSpeech.TextToSpeechClient({
-      apiKey: process.env.GOOGLE_TTS_API_KEY,
-    });
+    googleClient = new TextToSpeech.TextToSpeechClient({ apiKey: process.env.GOOGLE_TTS_API_KEY });
   } catch (e) {
-    console.error('Google TTS Client Init failed:', e);
+    console.error('Google TTS client init failed:', e);
   }
 }
 
+/** Голос помощника мужской: по умолчанию Adam из мультиязычных голосов ElevenLabs. */
+const ELEVEN_VOICE = process.env.ELEVENLABS_VOICE_ID || 'pNInz6obpgDQGcFmaJgB';
+
+/**
+ * Озвучка ответа помощника.
+ *
+ * Порядок такой: казахский читает Mangisoz — это официальный синтез ISSAI,
+ * и звучит он на казахском лучше всех. Русский и английский идут в
+ * ElevenLabs: один голос читает оба языка, поэтому «IT Ertis Volunteer»
+ * внутри русской фразы не превращается в кашу. Дальше — Google Cloud,
+ * и только в самом конце публичный голос Google Translate: он женский и
+ * механический, поэтому используется, лишь когда не осталось ничего.
+ *
+ * Прежний основной путь, Edge Neural, убран: Microsoft закрыла этот адрес,
+ * он отвечает 404, и каждая фраза впустую ходила туда перед запасным.
+ */
 export async function POST(req: NextRequest) {
   try {
     const { text: rawText, language } = await req.json();
-    const lang = language === 'kz' ? 'kz' : 'ru';
+    if (!rawText) return NextResponse.json({ error: 'Нет текста' }, { status: 400 });
 
-    if (!rawText) {
-      return NextResponse.json({ error: 'No text provided' }, { status: 400 });
-    }
+    const text = forSpeech(rawText);
+    if (!text) return NextResponse.json({ error: 'Нечего озвучивать' }, { status: 400 });
 
-    // Синтезаторы проговаривают эмодзи и markdown вслух ("подмигивающее лицо",
-    // "звёздочка"), поэтому убираем их из озвучки — в чате текст остаётся как есть.
-    const text = String(rawText)
-      .replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE00}-\u{FE0F}\u{1F1E6}-\u{1F1FF}\u{2190}-\u{21FF}\u{2B00}-\u{2BFF}\u{20D0}-\u{20FF}\u{2122}\u{2139}\u{3030}\u{303D}]/gu, ' ')
-      .replace(/[*_`#~]/g, '')
-      .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
-      .replace(/\s{2,}/g, ' ')
-      .trim();
+    const lang = speechLang(text, language);
 
-    if (!text) {
-      return NextResponse.json({ error: 'Nothing to speak' }, { status: 400 });
-    }
-
-    // 0. Official ISSAI Mangisoz TTS (The Absolute Gold Standard for Kazakh)
-    const mangisozKey = process.env.MANGISOZ_API_KEY;
-    if (lang === 'kz' && mangisozKey) {
+    // 1. Казахский — Mangisoz (ISSAI), мужской голос.
+    if (lang === 'kk' && process.env.MANGISOZ_API_KEY) {
       try {
-        console.log('TTS: Trying Official Mangisoz (ISSAI)...');
-        const params = new URLSearchParams({
-          text,
-          lang: "kk",
-          speaker: "male",
-        });
-        const mRes = await fetch("https://mangisoz.nu.edu.kz/backend/api/v1/tts/audio", {
-          method: "POST",
+        const res = await fetch('https://mangisoz.nu.edu.kz/backend/api/v1/tts/audio', {
+          method: 'POST',
           headers: {
-            "Content-Type": "application/x-www-form-urlencoded",
-            "X-API-Key": mangisozKey,
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-API-Key': process.env.MANGISOZ_API_KEY,
           },
-          body: params,
-          signal: AbortSignal.timeout(10000)
+          body: new URLSearchParams({ text, lang: 'kk', speaker: 'male' }),
+          signal: AbortSignal.timeout(15000),
         });
-        if (mRes.ok) {
-          console.log('Success: Mangisoz (ISSAI)');
-          const buffer = await mRes.arrayBuffer();
-          return new NextResponse(buffer, { headers: { "Content-Type": "audio/wav" } });
+        if (res.ok) {
+          return new NextResponse(await res.arrayBuffer(), { headers: { 'Content-Type': 'audio/wav' } });
         }
+        console.warn('Mangisoz answered', res.status);
       } catch (e: any) {
-        console.warn('Mangisoz API failed, falling back:', e.message);
+        console.warn('Mangisoz failed:', e.message);
       }
     }
 
-    // 1. Direct Microsoft Edge Neural TTS (Daulet/Dmitry)
-    // Primary fallback / Russian choice: Best general neural quality.
-    try {
-      const voice = lang === 'kz' ? 'kk-KZ-DauletNeural' : 'ru-RU-DmitryNeural';
-      console.log(`TTS: Trying Direct Edge Neural (${voice})...`);
-      
-      const audioUrl = `https://speech.platform.bing.com/consumer/speech/synthesize/readaloud/edge/v1?TrustedClientToken=6A5AA1D4EAFF4E97A7C030823F7E3F42&VoiceName=${voice}&Text=${encodeURIComponent(text)}&OutputFormat=audio-24khz-48kbitrate-mono-mp3`;
-
-      const msRes = await fetch(audioUrl, {
-        method: 'GET',
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-          'X-Microsoft-OutputFormat': 'audio-24khz-48kbitrate-mono-mp3'
-        },
-        signal: AbortSignal.timeout(5000)
-      });
-
-      if (msRes.ok) {
-        console.log(`Success: Microsoft Edge Neural (${voice})`);
-        const buffer = await msRes.arrayBuffer();
-        return new NextResponse(buffer, { headers: { 'Content-Type': 'audio/mpeg' } });
+    // 2. ElevenLabs — один мультиязычный голос на русский и английский.
+    if (process.env.ELEVENLABS_API_KEY) {
+      try {
+        const res = await fetch(
+          `https://api.elevenlabs.io/v1/text-to-speech/${ELEVEN_VOICE}?output_format=mp3_44100_128`,
+          {
+            method: 'POST',
+            headers: {
+              'xi-api-key': process.env.ELEVENLABS_API_KEY,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              text,
+              model_id: 'eleven_turbo_v2_5',
+              voice_settings: { stability: 0.4, similarity_boost: 0.75 },
+            }),
+            signal: AbortSignal.timeout(20000),
+          }
+        );
+        if (res.ok) {
+          return new NextResponse(await res.arrayBuffer(), { headers: { 'Content-Type': 'audio/mpeg' } });
+        }
+        console.warn('ElevenLabs answered', res.status, await res.text());
+      } catch (e: any) {
+        console.warn('ElevenLabs failed:', e.message);
       }
-    } catch (err: any) {
-      console.warn('Edge TTS Error:', err.message);
     }
 
-    // 2. Official Google Cloud TTS (Premium Fallback)
+    // 3. Google Cloud — мужские голоса обоих языков.
     if (googleClient) {
       try {
-        console.log('TTS: Trying Google Cloud TTS (Official)...');
         const [response] = await googleClient.synthesizeSpeech({
           input: { text },
           voice: {
-            languageCode: lang === 'kz' ? 'kk-KZ' : 'ru-RU',
+            languageCode: lang === 'kk' ? 'kk-KZ' : 'ru-RU',
             ssmlGender: 'MALE',
-            name: lang === 'kz' ? 'kk-KZ-Standard-A' : 'ru-RU-Wavenet-B'
+            name: lang === 'kk' ? 'kk-KZ-Standard-A' : 'ru-RU-Wavenet-D',
           },
-          audioConfig: { audioEncoding: 'MP3' },
+          audioConfig: { audioEncoding: 'MP3', speakingRate: 1.05 },
         });
-
         if (response.audioContent) {
-          console.log('Success: Google Cloud TTS');
           return new NextResponse(new Uint8Array(response.audioContent as Buffer), {
             headers: { 'Content-Type': 'audio/mpeg' },
           });
         }
-      } catch (err: any) {
-        console.warn('Google Cloud TTS failed:', err.message);
+      } catch (e: any) {
+        console.warn('Google Cloud TTS failed:', e.message);
       }
     }
 
-    // 3. Final Failsafe: Google Translate (Free Public API)
+    // 4. Последняя надежда: публичный голос Google Translate.
     try {
-      const gLang = lang === 'kz' ? 'kk' : 'ru';
-      console.log('TTS: Final Failsafe (Google Translate Public)...');
-      const gRes = await fetch(`https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(text)}&tl=${gLang}&client=tw-ob`);
-      if (gRes.ok) {
-        console.log('Success: Google Translate Public');
-        const buffer = await gRes.arrayBuffer();
-        return new NextResponse(buffer, { headers: { 'Content-Type': 'audio/mpeg' } });
+      const res = await fetch(
+        `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(text.slice(0, 200))}&tl=${lang}&client=tw-ob`,
+        { signal: AbortSignal.timeout(10000) }
+      );
+      if (res.ok) {
+        return new NextResponse(await res.arrayBuffer(), { headers: { 'Content-Type': 'audio/mpeg' } });
       }
-    } catch (e) {}
+    } catch {
+      // дальше уже нечем
+    }
 
-    return NextResponse.json({ error: 'All TTS failed' }, { status: 501 });
-
+    return NextResponse.json({ error: 'Синтез речи недоступен' }, { status: 503 });
   } catch (error) {
-    console.error('TTS Error:', error);
-    return NextResponse.json({ error: 'TTS processing failed' }, { status: 500 });
+    console.error('TTS error:', error);
+    return NextResponse.json({ error: 'Ошибка синтеза речи' }, { status: 500 });
   }
 }
