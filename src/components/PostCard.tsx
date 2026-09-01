@@ -327,8 +327,10 @@ function EditForm({
         )}
 
         {post.type === 'announcement' && (
-          <div className="flex gap-2">
-            <div className="relative flex-1">
+          <div className="flex flex-wrap gap-2">
+            {/* На узком экране время переносится под дату: иначе поле даты
+                сжималось до ста двадцати пикселей и обрезало сам текст. */}
+            <div className="relative min-w-[9rem] flex-1">
               <CalendarDays size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 type="date"
@@ -338,7 +340,7 @@ function EditForm({
                 className="w-full rounded-xl border border-slate-200 py-2.5 pl-9 pr-3 text-sm outline-none focus:border-teal-400"
               />
             </div>
-            <div className="relative w-[7.5rem] shrink-0">
+            <div className="relative w-[7.5rem] grow sm:grow-0">
               <Clock size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
               <input
                 type="time"

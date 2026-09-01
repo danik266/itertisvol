@@ -11,16 +11,23 @@ import VideoPlayer from '@/components/VideoPlayer';
  * и при обрезке по центру у людей отрезало головы. Лучше поля по бокам,
  * чем испорченный кадр.
  *
- * Одиночное видео само подбирает высоту под свои пропорции (autoAspect):
- * раньше вертикальный ролик занимал экран целиком и прятал остальную ленту.
+ * Одиночное вложение само подбирает высоту под свои пропорции: вертикальный
+ * ролик раньше занимал экран целиком, а портретное фото открывалось в коробке
+ * высотой в 70% экрана с широкими серыми полями по бокам.
  *
  * Несколько файлов — карусель с прокруткой по одному кадру: пальцем смахивается
  * само собой, а мышью работают стрелки по краям.
  */
+/** Портретнее 4:5 и шире 16:9 кадр не растягиваем — по краям будут поля. */
+const MIN_RATIO = 4 / 5;
+const MAX_RATIO = 16 / 9;
+
 export default function MediaGallery({ media }: { media: MediaItem[] }) {
   const items = (media || []).filter(m => m && m.url);
   const [openAt, setOpenAt] = useState<number | null>(null);
   const [index, setIndex] = useState(0);
+  // Пропорции одиночного фото становятся известны только после загрузки.
+  const [photoRatio, setPhotoRatio] = useState(MIN_RATIO);
   const trackRef = useRef<HTMLDivElement>(null);
 
   const many = items.length > 1;
@@ -59,12 +66,24 @@ export default function MediaGallery({ media }: { media: MediaItem[] }) {
               onExpand={() => setOpenAt(0)}
             />
           ) : (
-            <button onClick={() => setOpenAt(0)} className="block w-full" aria-label="Открыть фото">
+            <button
+              onClick={() => setOpenAt(0)}
+              className="relative block max-h-[80vh] w-full"
+              style={{ aspectRatio: String(photoRatio) }}
+              aria-label="Открыть фото"
+            >
               <img
                 src={only.url}
                 alt=""
                 loading="lazy"
-                className="max-h-[70vh] w-full object-contain"
+                onLoad={e => {
+                  const img = e.currentTarget;
+                  if (!img.naturalWidth || !img.naturalHeight) return;
+                  setPhotoRatio(
+                    Math.min(MAX_RATIO, Math.max(MIN_RATIO, img.naturalWidth / img.naturalHeight))
+                  );
+                }}
+                className="h-full w-full object-contain"
               />
               <ExpandHint />
             </button>
