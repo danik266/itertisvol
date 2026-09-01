@@ -14,6 +14,78 @@ const replicate = new Replicate({
   auth: process.env.REPLICATE_API_TOKEN,
 });
 
+/** Один вызов Groq: текстовые задачи и подготовка промптов идут через него. */
+async function groqChat(
+  system: string,
+  user: string,
+  maxTokens: number,
+  temperature = 0.7,
+  reasoningEffort?: 'low' | 'medium' | 'high',
+): Promise<string> {
+  const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'openai/gpt-oss-120b',
+      messages: [
+        { role: 'system', content: system },
+        { role: 'user', content: user },
+      ],
+      max_tokens: maxTokens,
+      temperature,
+      ...(reasoningEffort ? { reasoning_effort: reasoningEffort } : {}),
+    }),
+  });
+
+  if (!res.ok) {
+    console.error('Groq error:', await res.text());
+    throw new Error('Groq API Error');
+  }
+
+  const data = await res.json();
+  return String(data.choices?.[0]?.message?.content || '').trim();
+}
+
+/**
+ * Волонтёры пишут запрос по-русски, а Flux понимает английский заметно лучше:
+ * с русского он ловит два-три слова и рисует что-то своё. Поэтому просьбу
+ * сначала переводим и разворачиваем в подробное английское описание.
+ */
+const PROMPT_WRITER = `You write prompts for the FLUX text-to-image model.
+Rewrite the user's request in English as ONE vivid, concrete visual description.
+Rules:
+- Output only the prompt itself. No quotes, no explanations, no preamble.
+- Keep every meaningful detail the user asked for: colours, symbols, objects, style.
+- Describe what is visible in the frame, not intentions or feelings.
+- Do NOT invent slogans or lettering. Written words come out garbled and ruin the
+  image. Only keep text if the user explicitly named the exact words, and then
+  repeat them verbatim in quotes.
+- Aim for 40-70 words.`;
+
+async function toImagePrompt(request: string, brief: string): Promise<string> {
+  try {
+    /**
+     * Запас по токенам и низкое усилие рассуждений: gpt-oss сначала думает,
+     * и на 300 токенах ответ обрывался на полуслове либо не доходил вовсе.
+     */
+    const written = await groqChat(
+      PROMPT_WRITER,
+      `${brief}\n\nЗапрос пользователя: "${request}"`,
+      700,
+      0.6,
+      'low',
+    );
+    const clean = written.replace(/^["'«»]+|["'«»]+$/g, '').trim();
+    return clean.length > 10 ? clean : request;
+  } catch {
+    // Перевод — улучшение, а не обязательный шаг: без него просто рисуем как есть.
+    return request;
+  }
+}
+
 /**
  * Генерирует картинку и возвращает ссылку на неё.
  *
@@ -54,9 +126,13 @@ export async function POST(req: Request) {
     }
 
     await dbConnect();
-    const user = await User.findById(userId).select('generationCount generationResetAt isBlocked');
+    const user = await User.findById(userId).select('generationCount generationResetAt isBlocked role');
     if (!user) return NextResponse.json({ error: 'Пользователь не найден' }, { status: 404 });
     if (user.isBlocked) return NextResponse.json({ error: 'Генерация недоступна' }, { status: 403 });
+
+    // Главному администратору лимит не считаем: он показывает генератор со
+    // сцены и правит контент, четырёх попыток в сутки на это не хватает.
+    const unlimited = user.role === 'admin';
 
     // Счётчик обнуляется в начале новых суток.
     const now = new Date();
@@ -68,7 +144,7 @@ export async function POST(req: Request) {
       resetAt.getDate() === now.getDate();
 
     const used = sameDay ? user.generationCount : 0;
-    if (used >= DAILY_LIMIT) {
+    if (!unlimited && used >= DAILY_LIMIT) {
       return NextResponse.json(
         {
           error: `Дневной лимит исчерпан: ${DAILY_LIMIT} генерации в сутки. Попробуйте завтра.`,
@@ -84,58 +160,71 @@ export async function POST(req: Request) {
      * нейросети съедал бы дневной лимит, не отдав волонтёру ничего взамен.
      */
     const chargeAttempt = () =>
-      User.updateOne(
-        { _id: userId },
-        sameDay
-          ? { $inc: { generationCount: 1 } }
-          : { $set: { generationCount: 1, generationResetAt: now } }
-      );
+      unlimited
+        ? Promise.resolve()
+        : User.updateOne(
+            { _id: userId },
+            sameDay
+              ? { $inc: { generationCount: 1 } }
+              : { $set: { generationCount: 1, generationResetAt: now } }
+          );
 
     if (type === 'image') {
+      const described = await toImagePrompt(prompt, 'Иллюстрация для волонтёрского сообщества.');
       const imageUrl = await generateImage('black-forest-labs/flux-1.1-pro', {
-        prompt: prompt,
+        prompt: `${described} Natural lighting, realistic proportions, sharp focus, high detail.`,
         prompt_upsampling: true,
+        aspect_ratio: '4:3',
+        output_format: 'jpg',
       });
       await chargeAttempt();
       return NextResponse.json({ type: 'image', result: imageUrl });
     } else if (type === 'merch') {
-      const enhancedPrompt = `Professional 3D render or clean flat mockup of volunteer organization merchandise apparel. ${prompt}. FRONT AND BACK VIEW ONLY. Exactly one strictly isolated clothing object on a clean solid white background. STRICTLY NO PEOPLE, NO MANNEQUINS, NO EXTRA PROPS, NO SHOES, NO ACCESSORIES, NO BACKGROUND OBJECTS. Minimalist product showcase, 8k resolution, highly detailed photorealistic clothing design.`;
-      const imageUrl = await generateImage('black-forest-labs/flux-schnell', { prompt: enhancedPrompt });
+      const described = await toImagePrompt(
+        prompt,
+        'Мокап одежды для волонтёров: футболка, худи или жилет. Опиши цвет ткани, крой и рисунок на груди.'
+      );
+      /**
+       * Модель посильнее и явный запрет на выдуманные надписи: schnell рисовал
+       * на футболках бессмысленные буквы вроде «VULDER RECTNECCIVE», и вместо
+       * волонтёрской формы получалась спортивная форма неизвестного клуба.
+       */
+      const enhancedPrompt = `Product photography mockup of volunteer team apparel. ${described} Flat lay garment mockup, front view and back view side by side, isolated on a plain pure white background. Simple casual cut, not a sports jersey. No people, no mannequins, no hangers, no props, no shadows of objects. Do not add any invented lettering, logos or slogans — leave the fabric clean unless specific words were described. Soft even studio lighting, crisp fabric texture, high resolution.`;
+      const imageUrl = await generateImage('black-forest-labs/flux-1.1-pro', {
+        prompt: enhancedPrompt,
+        prompt_upsampling: true,
+        aspect_ratio: '4:3',
+        output_format: 'jpg',
+      });
       await chargeAttempt();
       return NextResponse.json({ type: 'image', result: imageUrl });
     } else if (type === 'logo') {
-      const enhancedPrompt = `Professional modern vector flat logo design for a volunteer organization. ${prompt}. Clean solid white background, minimalist, high resolution, crisp lines, corporate identity.`;
-      const imageUrl = await generateImage('black-forest-labs/flux-schnell', { prompt: enhancedPrompt });
+      const described = await toImagePrompt(
+        prompt,
+        'Эмблема волонтёрской организации. Опиши символ, форму и два-три цвета.'
+      );
+      const enhancedPrompt = `Flat vector logo design. ${described} Single centered emblem on a plain pure white background, clean geometric shapes, bold silhouette, limited colour palette, crisp edges, no gradients, no photorealism, no mockup, no background scenery. Do not add invented lettering or slogans unless specific words were described.`;
+      const imageUrl = await generateImage('black-forest-labs/flux-1.1-pro', {
+        prompt: enhancedPrompt,
+        prompt_upsampling: true,
+        aspect_ratio: '1:1',
+        output_format: 'jpg',
+      });
       await chargeAttempt();
       return NextResponse.json({ type: 'image', result: imageUrl });
     } else if (type === 'scenario') {
-      const systemPrompt = "Ты — профессиональный организатор мероприятий и координатор волонтёров. Твоя задача писать подробные, чёткие и реалистичные сценарии мероприятий на русском языке. Включай тайминг, распределение ролей и список инвентаря.";
+      const systemPrompt = `Ты — профессиональный организатор мероприятий и координатор волонтёров.
+Пиши подробные, чёткие и реалистичные сценарии мероприятий на русском языке.
+Обязательно включай тайминг, распределение ролей и список инвентаря.
 
-      const groqReq = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          model: 'openai/gpt-oss-120b',
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: `Напиши подробный сценарий для мероприятия: "${prompt}"` }
-          ],
-          max_tokens: 1500,
-          temperature: 0.7
-        })
-      });
+Оформление:
+- Заголовки разделов — строкой вида «## Название».
+- Расписание и роли — таблицами Markdown с заголовком и разделителем.
+- Списки — строками, начинающимися с «- ».
+- Выделяй важное двойными звёздочками.
+- Не используй горизонтальные линии из дефисов.`;
 
-      if (!groqReq.ok) {
-        const errText = await groqReq.text();
-        console.error('Groq error:', errText);
-        throw new Error('Groq API Error');
-      }
-
-      const groqData = await groqReq.json();
-      const text = groqData.choices[0].message.content;
+      const text = await groqChat(systemPrompt, `Напиши подробный сценарий для мероприятия: "${prompt}"`, 1800);
 
       await chargeAttempt();
       return NextResponse.json({ type: 'text', result: text });

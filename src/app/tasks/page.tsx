@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useLang } from '@/lib/LangContext';
 import { useAuth } from '@/lib/AuthContext';
 import { Sparkles, Lock, RefreshCw, Download, Palette, Shirt, PenLine, Lightbulb } from 'lucide-react';
+import MarkdownText from '@/components/MarkdownText';
 import Link from 'next/link';
 
 const generatorTypes = [
@@ -276,7 +277,9 @@ export default function TasksPage() {
                   <img src={result} alt={prompt} className="w-full h-auto object-contain max-h-[500px]" />
                 </div>
               ) : (
-                <p className="text-gray-700 text-sm leading-relaxed whitespace-pre-line font-medium mb-4">{result}</p>
+                <div className="mb-4 rounded-xl bg-white/70 p-4">
+                  <MarkdownText text={result} />
+                </div>
               )}
 
               <div className="mt-4 flex gap-2">
