@@ -3,6 +3,8 @@ import Replicate from 'replicate';
 import { getUserIdFromCookie } from '@/lib/jwt';
 import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
+import Generation, { GenerationKind } from '@/models/Generation';
+import { storeImage } from '@/lib/storeImage';
 
 /** Сколько генераций в сутки доступно одному волонтёру. */
 const DAILY_LIMIT = 4;
@@ -83,6 +85,18 @@ async function toImagePrompt(request: string, brief: string): Promise<string> {
   } catch {
     // Перевод — улучшение, а не обязательный шаг: без него просто рисуем как есть.
     return request;
+  }
+}
+
+/**
+ * Кладёт результат в историю. Сбой записи не должен ронять саму генерацию:
+ * волонтёру важнее увидеть картинку, чем сохранить её в архив.
+ */
+async function remember(author: string, kind: GenerationKind, prompt: string, fields: { imageUrl?: string; text?: string }) {
+  try {
+    await Generation.create({ author, kind, prompt, ...fields });
+  } catch (error) {
+    console.error('Generation history save failed:', error);
   }
 }
 
@@ -177,8 +191,10 @@ export async function POST(req: Request) {
         aspect_ratio: '4:3',
         output_format: 'jpg',
       });
+      const stored = await storeImage(imageUrl);
       await chargeAttempt();
-      return NextResponse.json({ type: 'image', result: imageUrl });
+      await remember(userId, 'image', prompt, { imageUrl: stored });
+      return NextResponse.json({ type: 'image', result: stored });
     } else if (type === 'merch') {
       const described = await toImagePrompt(
         prompt,
@@ -196,8 +212,10 @@ export async function POST(req: Request) {
         aspect_ratio: '4:3',
         output_format: 'jpg',
       });
+      const stored = await storeImage(imageUrl);
       await chargeAttempt();
-      return NextResponse.json({ type: 'image', result: imageUrl });
+      await remember(userId, 'merch', prompt, { imageUrl: stored });
+      return NextResponse.json({ type: 'image', result: stored });
     } else if (type === 'logo') {
       const described = await toImagePrompt(
         prompt,
@@ -210,8 +228,10 @@ export async function POST(req: Request) {
         aspect_ratio: '1:1',
         output_format: 'jpg',
       });
+      const stored = await storeImage(imageUrl);
       await chargeAttempt();
-      return NextResponse.json({ type: 'image', result: imageUrl });
+      await remember(userId, 'logo', prompt, { imageUrl: stored });
+      return NextResponse.json({ type: 'image', result: stored });
     } else if (type === 'scenario') {
       const systemPrompt = `Ты — профессиональный организатор мероприятий и координатор волонтёров.
 Пиши подробные, чёткие и реалистичные сценарии мероприятий на русском языке.
@@ -227,6 +247,7 @@ export async function POST(req: Request) {
       const text = await groqChat(systemPrompt, `Напиши подробный сценарий для мероприятия: "${prompt}"`, 1800);
 
       await chargeAttempt();
+      await remember(userId, 'scenario', prompt, { text });
       return NextResponse.json({ type: 'text', result: text });
     } else {
       return NextResponse.json({ error: 'Неизвестный тип генератора' }, { status: 400 });

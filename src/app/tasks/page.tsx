@@ -1,8 +1,8 @@
 'use client';
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useLang } from '@/lib/LangContext';
 import { useAuth } from '@/lib/AuthContext';
-import { Sparkles, Lock, RefreshCw, Download, Palette, Shirt, PenLine, Lightbulb } from 'lucide-react';
+import { Sparkles, Lock, RefreshCw, Download, Palette, Shirt, PenLine, Lightbulb, History, Trash2 } from 'lucide-react';
 import MarkdownText from '@/components/MarkdownText';
 import Link from 'next/link';
 
@@ -59,14 +59,53 @@ const generatorTypes = [
 
 
 
+interface HistoryItem {
+  _id: string;
+  kind: 'image' | 'merch' | 'logo' | 'scenario';
+  prompt: string;
+  imageUrl?: string;
+  text?: string;
+  createdAt: string;
+}
+
 export default function TasksPage() {
-  const { t } = useLang();
-  const { user, updateUser } = useAuth();
+  const { t, lang } = useLang();
+  const { user } = useAuth();
   const [activeType, setActiveType] = useState('image');
   const [prompt, setPrompt] = useState('');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<string | null>(null);
   const [resultType, setResultType] = useState<"image" | "text" | null>(null);
+  const [history, setHistory] = useState<HistoryItem[]>([]);
+
+  /** История хранится на сервере: она нужна как раз тогда, когда страницу закрыли. */
+  const loadHistory = useCallback(async () => {
+    if (!user) { setHistory([]); return; }
+    try {
+      const res = await fetch('/api/generations');
+      if (!res.ok) return;
+      const data = await res.json();
+      setHistory(data.items || []);
+    } catch {
+      // молча: без истории страница остаётся рабочей
+    }
+  }, [user]);
+
+  useEffect(() => { loadHistory(); }, [loadHistory]);
+
+  const openFromHistory = (item: HistoryItem) => {
+    setActiveType(item.kind);
+    setPrompt(item.prompt);
+    setResultType(item.kind === 'scenario' ? 'text' : 'image');
+    setResult(item.kind === 'scenario' ? (item.text || '') : (item.imageUrl || ''));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const clearHistory = async () => {
+    if (!confirm(t('Очистить всю историю генераций?', 'Барлық генерация тарихын тазалау керек пе?'))) return;
+    const res = await fetch('/api/generations', { method: 'DELETE' });
+    if (res.ok) setHistory([]);
+  };
 
   const activeGen = generatorTypes.find(g => g.id === activeType)!;
 
@@ -92,13 +131,8 @@ export default function TasksPage() {
       setResult(data.result);
       setResultType(data.type);
 
-      if (user) {
-        const historyText = data.type === 'image' 
-          ? `[IMAGE] ${activeGen.labelRu}: ${prompt}` 
-          : `[TEXT] ${activeGen.labelRu}: ${prompt}`;
-        const history = [...(user.generationHistory || []), historyText];
-        await updateUser({ generationHistory: history });
-      }
+      // Запись в историю делает сервер вместе с генерацией, здесь только обновляем список.
+      loadHistory();
     } catch (err: any) {
       alert(err.message);
     } finally {
@@ -299,6 +333,66 @@ export default function TasksPage() {
             </div>
           )}
         </div>
+
+        {/* История генераций */}
+        {user && history.length > 0 && (
+          <div className="mt-10">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <h3 className="inline-flex items-center gap-2 font-bold text-gray-700">
+                <History size={17} className="text-gray-400" />
+                {t('История генераций', 'Генерация тарихы')}
+                <span className="text-sm font-medium text-gray-400">{history.length}</span>
+              </h3>
+              <button
+                onClick={clearHistory}
+                className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold text-gray-400 transition-colors hover:bg-red-50 hover:text-red-500"
+              >
+                <Trash2 size={13} />
+                {t('Очистить', 'Тазалау')}
+              </button>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              {history.map(item => {
+                const gen = generatorTypes.find(g => g.id === item.kind);
+                return (
+                  <button
+                    key={item._id}
+                    onClick={() => openFromHistory(item)}
+                    className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white p-3 text-left transition-all hover:border-teal-300 hover:shadow-sm"
+                  >
+                    {item.kind === 'scenario' ? (
+                      <span
+                        className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg"
+                        style={{ background: gen?.bg }}
+                      >
+                        <PenLine size={20} style={{ color: gen?.color }} />
+                      </span>
+                    ) : (
+                      <img
+                        src={item.imageUrl}
+                        alt=""
+                        loading="lazy"
+                        className="h-14 w-14 shrink-0 rounded-lg border border-gray-100 object-cover"
+                      />
+                    )}
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-xs font-bold" style={{ color: gen?.color }}>
+                        {t(gen?.labelRu || '', gen?.labelKz || '')}
+                      </span>
+                      <span className="mt-0.5 block truncate text-sm text-gray-700">{item.prompt}</span>
+                      <span className="mt-0.5 block text-xs text-gray-400">
+                        {new Date(item.createdAt).toLocaleString(lang === 'kz' ? 'kk-KZ' : 'ru-RU', {
+                          day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
+                        })}
+                      </span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Prompt examples */}
         <div className="mt-8">
