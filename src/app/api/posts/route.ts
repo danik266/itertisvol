@@ -6,6 +6,7 @@ import { getUserIdFromCookie } from '@/lib/jwt';
 import { moderateText } from '@/lib/moderation';
 import { hasProfanity } from '@/lib/profanity';
 import { notifyAllVolunteers } from '@/lib/notify';
+import { cleanTime } from '@/lib/eventTime';
 
 export const dynamic = 'force-dynamic';
 
@@ -65,7 +66,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { type, text, media, direction, location, eventDate, isUrgent, allowAttend } = body;
+    const { type, text, media, direction, location, eventDate, eventTime, isUrgent, allowAttend } = body;
 
     if (!TYPES.includes(type)) {
       return NextResponse.json({ error: 'Неизвестный тип публикации' }, { status: 400 });
@@ -103,6 +104,7 @@ export async function POST(req: NextRequest) {
       direction: direction || '',
       location: location || '',
       eventDate: eventDate ? new Date(eventDate) : undefined,
+      eventTime: cleanTime(eventTime),
       isUrgent: Boolean(isUrgent),
       allowAttend: Boolean(allowAttend),
     });

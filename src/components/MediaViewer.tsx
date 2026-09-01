@@ -83,7 +83,7 @@ export default function MediaViewer({
       <div className="relative flex flex-1 items-center justify-center px-2 pb-4">
         {item.type === 'video' ? (
           <div className="max-h-full w-full max-w-4xl" onClick={e => e.stopPropagation()}>
-            <VideoPlayer src={item.url} className="max-h-[80vh] rounded-xl" />
+            <VideoPlayer src={item.url} autoAspect className="max-h-[85vh] w-full rounded-xl" />
           </div>
         ) : (
           <img

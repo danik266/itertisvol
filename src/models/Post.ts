@@ -23,6 +23,12 @@ export interface IPost extends Document {
   location: string;
   /** Дата события — по ней объявления группируются по месяцам. */
   eventDate?: Date;
+  /**
+   * Время начала как есть, строкой «ЧЧ:ММ». Отдельно от даты намеренно:
+   * в Date время уехало бы в UTC и на экране показалось бы на пять часов
+   * раньше, а пустая строка честно означает «время не указали».
+   */
+  eventTime: string;
   isUrgent: boolean;
   /** Автор решает, показывать ли кнопку «я приду». */
   allowAttend: boolean;
@@ -51,6 +57,7 @@ const PostSchema = new Schema<IPost>(
     direction: { type: String, default: '' },
     location: { type: String, default: '' },
     eventDate: { type: Date },
+    eventTime: { type: String, default: '' },
     isUrgent: { type: Boolean, default: false },
     allowAttend: { type: Boolean, default: false },
     attendees: { type: [Schema.Types.ObjectId], ref: 'User', default: [] },

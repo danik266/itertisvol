@@ -2,6 +2,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Play, Pause, Volume2, VolumeX, Maximize2 } from 'lucide-react';
 
+/** Портретнее 4:5 и шире 16:9 кадр не растягиваем — по краям будут поля. */
+const MIN_RATIO = 4 / 5;
+const MAX_RATIO = 16 / 9;
+
 /**
  * Свой проигрыватель вместо стандартного: у браузеров он выглядит по-разному,
  * а на телефоне занимает половину кадра. Здесь одинаковый вид везде и крупная
@@ -11,11 +15,18 @@ export default function VideoPlayer({
   src,
   className = '',
   onExpand,
+  autoAspect = false,
 }: {
   src: string;
   className?: string;
   /** Нажатие на кадр вне кнопок — открыть на весь экран. */
   onExpand?: () => void;
+  /**
+   * Подстроить высоту под сам ролик. Нужно там, где размер кадра не задан
+   * снаружи: вертикальное видео с телефона иначе растягивалось на всю
+   * страницу и закрывало собой ленту.
+   */
+  autoAspect?: boolean;
 }) {
   const ref = useRef<HTMLVideoElement>(null);
   const [playing, setPlaying] = useState(false);
@@ -23,6 +34,9 @@ export default function VideoPlayer({
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const [current, setCurrent] = useState(0);
+  // До загрузки метаданных считаем кадр вертикальным: с телефона снимают чаще,
+  // и так карточка не прыгает по высоте при появлении ролика.
+  const [ratio, setRatio] = useState(MIN_RATIO);
 
   const toggle = useCallback(() => {
     const el = ref.current;
@@ -40,7 +54,13 @@ export default function VideoPlayer({
       setCurrent(el.currentTime);
       setProgress(el.duration ? (el.currentTime / el.duration) * 100 : 0);
     };
-    const onMeta = () => setDuration(el.duration || 0);
+    const onMeta = () => {
+      setDuration(el.duration || 0);
+      if (el.videoWidth && el.videoHeight) {
+        const natural = el.videoWidth / el.videoHeight;
+        setRatio(Math.min(MAX_RATIO, Math.max(MIN_RATIO, natural)));
+      }
+    };
     el.addEventListener('play', onPlay);
     el.addEventListener('pause', onPause);
     el.addEventListener('timeupdate', onTime);
@@ -60,7 +80,10 @@ export default function VideoPlayer({
   };
 
   return (
-    <div className={`group relative overflow-hidden bg-black ${className}`}>
+    <div
+      className={`group relative overflow-hidden bg-black ${className}`}
+      style={autoAspect ? { aspectRatio: String(ratio) } : undefined}
+    >
       <video
         ref={ref}
         src={src}

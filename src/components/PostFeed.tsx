@@ -179,6 +179,7 @@ export default function PostFeed({
                 directions={directions}
                 onOpenComments={setOpenFor}
                 onDeleted={id => setPosts(prev => prev.filter(x => x._id !== id))}
+                onUpdated={next => setPosts(prev => prev.map(x => (x._id === next._id ? next : x)))}
               />
             ))
           )}

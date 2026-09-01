@@ -11,6 +11,9 @@ import VideoPlayer from '@/components/VideoPlayer';
  * и при обрезке по центру у людей отрезало головы. Лучше поля по бокам,
  * чем испорченный кадр.
  *
+ * Одиночное видео само подбирает высоту под свои пропорции (autoAspect):
+ * раньше вертикальный ролик занимал экран целиком и прятал остальную ленту.
+ *
  * Несколько файлов — карусель с прокруткой по одному кадру: пальцем смахивается
  * само собой, а мышью работают стрелки по краям.
  */
@@ -51,6 +54,7 @@ export default function MediaGallery({ media }: { media: MediaItem[] }) {
           {only.type === 'video' ? (
             <VideoPlayer
               src={only.url}
+              autoAspect
               className="max-h-[70vh] w-full"
               onExpand={() => setOpenAt(0)}
             />

@@ -6,7 +6,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { useData } from '@/lib/DataContext';
 import { uploadMedia, ACCEPTED_MEDIA } from '@/lib/uploadMedia';
 import type { PostType } from '@/components/PostCard';
-import { ImagePlus, X, AlertCircle, Send, CalendarDays, MapPin } from 'lucide-react';
+import { ImagePlus, X, AlertCircle, Send, CalendarDays, MapPin, Clock } from 'lucide-react';
 
 const MAX_MEDIA = 6;
 
@@ -26,6 +26,7 @@ export default function PostComposer({
   const [direction, setDirection] = useState('');
   const [location, setLocation] = useState('');
   const [eventDate, setEventDate] = useState('');
+  const [eventTime, setEventTime] = useState('');
   const [isUrgent, setIsUrgent] = useState(false);
   const [allowAttend, setAllowAttend] = useState(type !== 'experience');
   const [busy, setBusy] = useState(false);
@@ -80,6 +81,7 @@ export default function PostComposer({
           type, text, media, direction,
           location: location || undefined,
           eventDate: eventDate || undefined,
+          eventTime: eventTime || undefined,
           isUrgent, allowAttend,
         }),
       });
@@ -89,7 +91,7 @@ export default function PostComposer({
         return;
       }
       onCreated(data.post);
-      setText(''); setMedia([]); setLocation(''); setEventDate(''); setIsUrgent(false);
+      setText(''); setMedia([]); setLocation(''); setEventDate(''); setEventTime(''); setIsUrgent(false);
     } catch {
       setError(t('Ошибка сети', 'Желі қатесі'));
     } finally {
@@ -160,14 +162,28 @@ export default function PostComposer({
         )}
 
         {type === 'announcement' && (
-          <div className="relative">
-            <CalendarDays size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input
-              type="date"
-              value={eventDate}
-              onChange={e => setEventDate(e.target.value)}
-              className="w-full rounded-xl border border-slate-200 py-2.5 pl-9 pr-3 text-sm outline-none focus:border-teal-400"
-            />
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <CalendarDays size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="date"
+                value={eventDate}
+                onChange={e => setEventDate(e.target.value)}
+                aria-label={t('Дата мероприятия', 'Іс-шара күні')}
+                className="w-full rounded-xl border border-slate-200 py-2.5 pl-9 pr-3 text-sm outline-none focus:border-teal-400"
+              />
+            </div>
+            {/* Время необязательное: часть объявлений живёт без точного часа. */}
+            <div className="relative w-[7.5rem] shrink-0">
+              <Clock size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="time"
+                value={eventTime}
+                onChange={e => setEventTime(e.target.value)}
+                aria-label={t('Время начала', 'Басталу уақыты')}
+                className="w-full rounded-xl border border-slate-200 py-2.5 pl-9 pr-2 text-sm outline-none focus:border-teal-400"
+              />
+            </div>
           </div>
         )}
       </div>
